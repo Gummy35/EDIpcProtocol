@@ -1,0 +1,13 @@
+{
+  "name":        "EDIpcProtocol",
+  "keywords":    "Elite dangerous, EDControlPanel",
+  "description": "IPC Comm between ESP32 and pro micro in Elite dangerous Control Panel",
+  "authors":
+  {
+    "name":  "jlongo",
+    "email": "jeremy.longo.35@gmail.com"
+  },
+  "version":    "1.0.0",
+  "frameworks": "arduino",
+  "platforms": "*"
+}
