@@ -1,7 +1,5 @@
 #include "I2CDevice.h"
 
-std::function<void(char *logString)> I2CDevice::Log = nullptr;
-
 I2CDevice::I2CDevice(uint8_t startAddress, uint8_t endAddress, const char * name, uint8_t interruptPin)
 {
     Addr = startAddress;

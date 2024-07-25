@@ -11,25 +11,23 @@ struct AxisStruct {
     int32_t rz;
 };
 
-struct WifiCredentials {
-    char ssid[16];
-    char password[32];
-    uint32_t ip;
-    unsigned long __update;
+struct KeyEvent {
+    uint8_t key;
+    uint8_t pressed;
+    uint8_t count;
 };
 
 enum UPDATE_CATEGORY {
     KEYPAD = 1,
     GAME_FLAGS = 2,
     GAME_INFO = 4,
-    WIFI_CREDS = 8,
 };
 
 enum COM_REQUEST_TYPE {
     NONE = -1,
     //GET_STAR_SYSTEM = 0,
     GET_UPDATES = 1,
-    GET_WIFI_CREDENTIALS = 2,
     TRACKER_DATA = 128,
+    KEY_DATA = 129,
     PING_SLAVE = 255
 };

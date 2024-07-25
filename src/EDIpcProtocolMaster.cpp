@@ -1,4 +1,7 @@
 #include "EDIpcProtocolMaster.h"
+#include <Logger.h>
+
+#define KEY_EVENT_QUEUE_SIZE 100
 
 EDIpcProtocolMaster* EDIpcProtocolMaster::instance = nullptr;
 
@@ -11,6 +14,20 @@ EDIpcProtocolMaster::EDIpcProtocolMaster(I2CDevice *comMcu)
 
 bool EDIpcProtocolMaster::begin()
 {
+    _keyQueue = xQueueCreate(KEY_EVENT_QUEUE_SIZE, sizeof(KeyEvent));
+    if (_keyQueue == NULL) Serial.write("Failed to create key queue");
+}
+
+bool EDIpcProtocolMaster::sendKey(KeyEvent event)
+{
+    if (_keyQueue == NULL) {
+        Logger.Log("Key queue unavailable");
+        return false;
+    }
+    if (xQueueSend(_keyQueue, &event, portMAX_DELAY) != pdPASS) {
+        Logger.Log("Failed to add item to the queue");
+        return false;
+    }
     return true;
 }
 
@@ -79,6 +96,14 @@ bool EDIpcProtocolMaster::_sendAxisData()
     return false;
 }
 
+bool EDIpcProtocolMaster::_sendKeyData(KeyEvent* keyEvent)
+{
+    const size_t keyStructSize = sizeof(KeyEvent);
+    uint8_t *dataPtr = reinterpret_cast<uint8_t*>(&_axis);
+    comMcu->sendMessageData(COM_REQUEST_TYPE::KEY_DATA, dataPtr, keyStructSize);
+    return false;
+}
+
 bool EDIpcProtocolMaster::_getGameFlags()
 {
     return false;
@@ -94,18 +119,17 @@ bool EDIpcProtocolMaster::_getKeypadConfig()
     return false;
 }
 
-bool EDIpcProtocolMaster::_getWifiCredentials()
-{
-    uint8_t *receiveBuffer = reinterpret_cast<uint8_t *>(&wifiCredentials);    
-    return comMcu->getData(COM_REQUEST_TYPE::GET_WIFI_CREDENTIALS, receiveBuffer, sizeof(WifiCredentials));
-}
-
 void EDIpcProtocolMaster::sendChanges()
 {
     if (_hasAxisChanges) {
         if (_sendAxisData())
             _hasAxisChanges = false;
     }
+
+    KeyEvent keyEvent;
+    while (xQueueReceive(_keyQueue, &keyEvent, 0) == pdPASS) {
+        _sendKeyData(&keyEvent);
+    };
 }
 
 uint8_t EDIpcProtocolMaster::retrieveChanges()
@@ -132,11 +156,7 @@ uint8_t EDIpcProtocolMaster::retrieveChanges()
             Serial.println("Keypad config changes");
             result &= _getKeypadConfig();
         }
-        if (updateFlags & UPDATE_CATEGORY::WIFI_CREDS)
-        {
-            Serial.println("Wifi creds changed");
-            result &= _getWifiCredentials();
-        }    
+        
         return updateFlags;    
     }
     return 0;

@@ -14,17 +14,16 @@ public:
     void sendChanges();
     uint8_t retrieveChanges();
     bool pingSlave();
-
-    WifiCredentials wifiCredentials;
+    bool sendKey(KeyEvent event);
 
 protected:
     I2CDevice* comMcu;
     AxisStruct _axis;
-    bool _hasAxisChanges;
-
+    bool _hasAxisChanges;    
+    QueueHandle_t _keyQueue;
 
     bool _sendAxisData();
-
+    bool _sendKeyData(KeyEvent* keyEvent);
     bool _getGameFlags();
     bool _getGameInfo();
     bool _getKeypadConfig();

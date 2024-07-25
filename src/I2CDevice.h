@@ -25,8 +25,6 @@ public:
     uint8_t WireChannel;
     uint8_t InterruptPin;
 
-    static std::function<void(char *logString)> Log;
-
     // See wire.endTransmission for standard Errors.
     // supplemental errors :
     // 16: Data requested, but device return data not available
