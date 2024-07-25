@@ -8,6 +8,7 @@ volatile int _keyQueueHead = 0;
 volatile int _keyQueueTail = 0;
 volatile int _keyQueueCount = 0;
 
+
 EDIpcProtocolSlave* EDIpcProtocolSlave::instance = nullptr;
 
 EDIpcProtocolSlave::EDIpcProtocolSlave(TwoWire *wire)
@@ -67,8 +68,9 @@ void EDIpcProtocolSlave::updateDevices()
     _processKeyEventQueue();
 }
 
-void EDIpcProtocolSlave::_processKeyEventQueue() {
+void EDIpcProtocolSlave::_processKeyEventQueue() {  
     while (_keyQueueCount > 0) {
+    Serial.println("key loop");
         noInterrupts();
         KeyEvent* item = _keyQueue[_keyQueueHead];
         _keyQueueHead = (_keyQueueHead + 1) % KEY_EVENT_QUEUE_SIZE;
@@ -82,9 +84,11 @@ void EDIpcProtocolSlave::_processKeyEventQueue() {
                 if (item->count == 0)
                 {
                     Keyboard.press(item->key);
+                    Serial.print((int)item->key);
                 } 
                 else for(uint8_t c = 0; c<item->count; c++) {
                     Keyboard.press(item->key);
+                    Serial.print((int)item->key);
                     Keyboard.release(item->key);
                 }
             } else {
@@ -97,6 +101,7 @@ void EDIpcProtocolSlave::_processKeyEventQueue() {
 
 void EDIpcProtocolSlave::_addKeyEventToQueue(KeyEvent* keyEvent) {
     // Désactive les interruptions pour assurer la sécurité des données
+    Serial.println("new data");
     noInterrupts();
     if (_keyQueueCount < KEY_EVENT_QUEUE_SIZE) {
         _keyQueue[_keyQueueTail] = keyEvent;
@@ -127,31 +132,55 @@ void EDIpcProtocolSlave::_handleRequest()
 
 void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
 {
+    // Serial.print("handleReceiveData ");
+    // Serial.print(numBytes);
+    // Serial.println();
+    // m2+=numBytes;
+    // m1++;
     int requestVal = _wire->read();
+    // Serial.print("requestval ");
+    // Serial.print(requestVal);
+    // Serial.println();
     uint8_t *dataPtr;
     size_t bytesRead;
-    _currentRequestType = static_cast<COM_REQUEST_TYPE>(requestVal);
-
-    switch(_currentRequestType) {
-        case COM_REQUEST_TYPE::NONE:
-            break;
-        case COM_REQUEST_TYPE::TRACKER_DATA:
+    _currentRequestType = static_cast<COM_REQUEST_TYPE>((uint8_t)requestVal);
+    // Serial.print("request type: ");
+    // Serial.print(static_cast<uint8_t>(_currentRequestType));
+    // Serial.println();
+    //switch(_currentRequestType) {
+    //switch(requestVal) {
+        //if (requestVal == 128) {
+    if (_currentRequestType == COM_REQUEST_TYPE::TRACKER_DATA) {
+            Serial.println("tracker");
             const size_t axisStructSize = sizeof(AxisStruct);
             dataPtr = reinterpret_cast<uint8_t*>(&_axis);
             bytesRead = _wire->readBytes(dataPtr, axisStructSize);
             _hasAxisChanges = bytesRead == axisStructSize;
-            break;
-        case COM_REQUEST_TYPE::KEY_DATA:
+            //break;
+        }
+        if (_currentRequestType == COM_REQUEST_TYPE::KEY_DATA) {
+        //case COM_REQUEST_TYPE::KEY_DATA:
+            // Serial.println("Key");
             KeyEvent* keyEvent = new KeyEvent();
-            dataPtr = reinterpret_cast<uint8_t*>(&keyEvent);
-            bytesRead = _wire->readBytes(dataPtr, sizeof(KeyEvent));
+            bytesRead = _wire->readBytes((uint8_t*)keyEvent, sizeof(KeyEvent));
+            // Serial.print("key data ");
+            // Serial.print(bytesRead);
+            // Serial.println();
+            //m2 += bytesRead;
             _addKeyEventToQueue(keyEvent);
-            break;
-        case COM_REQUEST_TYPE::PING_SLAVE:        
-            break;
-        // default:
-        //     break;
-    }
+            //Serial.print((int)keyEvent->key);
+            //break;
+        }
+        //case COM_REQUEST_TYPE::PING_SLAVE:        
+        if (_currentRequestType == COM_REQUEST_TYPE::PING_SLAVE) {
+        //if (requestVal == 255) {
+            Serial.println("ping");
+        //    break;
+        }
+    //     default:
+    //         Serial.println("Unknown");
+    //         break;
+    // }
 }
 
 #endif

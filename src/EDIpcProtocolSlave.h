@@ -17,6 +17,9 @@ public:
     static void HandleReceivedData(int numBytes);
     void updateDevices();
 
+    int m1 = 0;
+    int m2 = 0;
+
 protected:
     TwoWire* _wire;
     COM_REQUEST_TYPE _currentRequestType;
