@@ -77,6 +77,12 @@ TwoWire* I2CDevice::beginTransmission()
 uint8_t I2CDevice::endTransmission()
 {
     LastError = this->Wire->endTransmission();
+    if (LastError != 0) {
+        this->Wire->clearWriteError();
+        this->Wire->flush();
+        this->Wire->end();
+        this->Wire->begin();
+    }
     return LastError;
 }
 
@@ -97,7 +103,7 @@ bool I2CDevice::sendMessageData(uint8_t messageId, uint8_t *messageData, size_t 
     }
     this->endTransmission();
     Serial.printf("Wire send result = %d \n", LastError);
-
+    
     return LastError == 0;
 }
 

@@ -102,14 +102,14 @@ bool EDIpcProtocolMaster::_sendAxisData()
 {
     const size_t axisStructSize = sizeof(AxisStruct);
     uint8_t *dataPtr = reinterpret_cast<uint8_t*>(&_axis);
-    comMcu->sendMessageData(COM_REQUEST_TYPE::TRACKER_DATA, dataPtr, axisStructSize);
+    comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::TRACKER_DATA, dataPtr, axisStructSize);
     return false;
 }
 
 bool EDIpcProtocolMaster::_sendKeyData(KeyEvent* keyEvent)
 {
     const size_t keyStructSize = sizeof(KeyEvent);
-    return comMcu->sendMessageData(COM_REQUEST_TYPE::KEY_DATA, (uint8_t*)keyEvent, keyStructSize);
+    return comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::KEY_DATA, (uint8_t*)keyEvent, keyStructSize);
 }
 
 bool EDIpcProtocolMaster::_getGameFlags()
@@ -147,20 +147,20 @@ uint8_t EDIpcProtocolMaster::retrieveChanges()
     uint8_t updateFlags;
     uint8_t *dataPtr = reinterpret_cast<uint8_t*>(&_lastUpdate);
     uint8_t *receiveBuffer = reinterpret_cast<uint8_t *>(&updateFlags);
-    if (comMcu->getData(COM_REQUEST_TYPE::GET_UPDATES, receiveBuffer, 1, true, dataPtr, sizeof(unsigned long)))
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::GET_UPDATES, receiveBuffer, 1, true, dataPtr, sizeof(unsigned long)))
     {
         result = true;
-        if (updateFlags & UPDATE_CATEGORY::GAME_FLAGS)
+        if (updateFlags & (uint8_t)UPDATE_CATEGORY::GAME_FLAGS)
         {
             Serial.println("Game flags changes");
             result &= _getGameFlags();
         }
-        if (updateFlags & UPDATE_CATEGORY::GAME_INFO)
+        if (updateFlags & (uint8_t)UPDATE_CATEGORY::GAME_INFO)
         {
             Serial.println("Game info changes");
             result &= _getGameInfo();
         }
-        if (updateFlags & UPDATE_CATEGORY::KEYPAD)
+        if (updateFlags & (uint8_t)UPDATE_CATEGORY::KEYPAD)
         {
             Serial.println("Keypad config changes");
             result &= _getKeypadConfig();
@@ -175,7 +175,7 @@ bool EDIpcProtocolMaster::pingSlave()
 {    
     char* pong;
     pong = (char *)malloc(10);
-    if (comMcu->getData(COM_REQUEST_TYPE::PING_SLAVE, (uint8_t *)pong, 5))
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::PING_SLAVE, (uint8_t *)pong, 5))
     {
         Serial.println(pong);
         free(pong);
