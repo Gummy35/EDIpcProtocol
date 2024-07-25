@@ -17,14 +17,14 @@ struct KeyEvent {
     uint8_t count;
 };
 
-enum UPDATE_CATEGORY {
+enum class UPDATE_CATEGORY: uint8_t {
     KEYPAD = 1,
     GAME_FLAGS = 2,
     GAME_INFO = 4,
 };
 
-enum COM_REQUEST_TYPE {
-    NONE = -1,
+enum class COM_REQUEST_TYPE: uint8_t {
+    NONE = 0,
     //GET_STAR_SYSTEM = 0,
     GET_UPDATES = 1,
     TRACKER_DATA = 128,
