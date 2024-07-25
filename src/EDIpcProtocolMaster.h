@@ -1,5 +1,5 @@
 #pragma once
-
+#ifdef ESP32
 #include "EDIpcProtocol.h"
 #include "I2CDevice.h"
 
@@ -31,3 +31,5 @@ protected:
 
     unsigned long _lastUpdate = 0;
 };
+
+#endif

@@ -1,5 +1,5 @@
 #pragma once
-
+#ifdef ESP32
 #include <Arduino.h>
 #include <Wire.h>
 
@@ -15,3 +15,4 @@ public:
     bool IsPresent;
     uint8_t LastError;
 };
+#endif

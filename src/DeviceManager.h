@@ -1,4 +1,5 @@
 #pragma once
+#ifdef ESP32
 
 #include <Arduino.h>
 #include <Wire.h>
@@ -19,3 +20,5 @@ public:
 private:
     size_t deviceCount;
 };
+
+#endif
