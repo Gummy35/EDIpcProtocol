@@ -1,7 +1,12 @@
 #ifndef ESP32
 
 #include "EDIpcProtocolSlave.h"
+#define KEY_EVENT_QUEUE_SIZE 10
 
+KeyEvent* _keyQueue[KEY_EVENT_QUEUE_SIZE];
+volatile int _keyQueueHead = 0;
+volatile int _keyQueueTail = 0;
+volatile int _keyQueueCount = 0;
 
 EDIpcProtocolSlave* EDIpcProtocolSlave::instance = nullptr;
 
@@ -13,7 +18,7 @@ EDIpcProtocolSlave::EDIpcProtocolSlave(TwoWire *wire)
         JOYSTICK_TYPE_MULTI_AXIS, 0, 0,
         true, true, true, true, true, true,
         false, false, false, false, false);
-    _currentRequestType = mREQUEST_TYPE::NONE;
+    _currentRequestType = COM_REQUEST_TYPE::NONE;
     _hasAxisChanges = false;
 }
 
@@ -59,6 +64,49 @@ void EDIpcProtocolSlave::updateDevices()
         _joystick->sendState();
         _hasAxisChanges = false;
     }
+    _processKeyEventQueue();
+}
+
+void EDIpcProtocolSlave::_processKeyEventQueue() {
+    while (_keyQueueCount > 0) {
+        noInterrupts();
+        KeyEvent* item = _keyQueue[_keyQueueHead];
+        _keyQueueHead = (_keyQueueHead + 1) % KEY_EVENT_QUEUE_SIZE;
+        _keyQueueCount--;
+        interrupts();
+
+        // process key event
+
+        if (item->key != 0) {            
+            if (item->pressed) {
+                if (item->count == 0)
+                {
+                    Keyboard.press(item->key);
+                } 
+                else for(uint8_t c = 0; c<item->count; c++) {
+                    Keyboard.press(item->key);
+                    Keyboard.release(item->key);
+                }
+            } else {
+                Keyboard.release(item->key);
+            }
+        }
+        delete item;
+    }
+}
+
+void EDIpcProtocolSlave::_addKeyEventToQueue(KeyEvent* keyEvent) {
+    // Désactive les interruptions pour assurer la sécurité des données
+    noInterrupts();
+    if (_keyQueueCount < KEY_EVENT_QUEUE_SIZE) {
+        _keyQueue[_keyQueueTail] = keyEvent;
+        _keyQueueTail = (_keyQueueTail + 1) % KEY_EVENT_QUEUE_SIZE;
+        _keyQueueCount++;
+    } else {
+        // queue full, ignore
+    }
+    // Réactive les interruptions
+    interrupts();
 }
 
 void EDIpcProtocolSlave::_handleRequest()
@@ -67,10 +115,10 @@ void EDIpcProtocolSlave::_handleRequest()
     char buffer[100];
 
     switch (_currentRequestType) {
-        case mREQUEST_TYPE::PING_SLAVE:
+        case COM_REQUEST_TYPE::PING_SLAVE:
             Wire.print(F("Pong"));
             Wire.write(0);
-            _currentRequestType = mREQUEST_TYPE::NONE;
+            _currentRequestType = COM_REQUEST_TYPE::NONE;
             break;       
         default:
             break;
@@ -80,18 +128,26 @@ void EDIpcProtocolSlave::_handleRequest()
 void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
 {
     int requestVal = _wire->read();
-    _currentRequestType = static_cast<mREQUEST_TYPE>(requestVal);
+    uint8_t *dataPtr;
+    size_t bytesRead;
+    _currentRequestType = static_cast<COM_REQUEST_TYPE>(requestVal);
 
     switch(_currentRequestType) {
-        case mREQUEST_TYPE::NONE:
+        case COM_REQUEST_TYPE::NONE:
             break;
-        case mREQUEST_TYPE::TRACKER_DATA:
+        case COM_REQUEST_TYPE::TRACKER_DATA:
             const size_t axisStructSize = sizeof(AxisStruct);
-            uint8_t *dataPtr = reinterpret_cast<uint8_t*>(&_axis);
-            size_t bytesRead = _wire->readBytes(dataPtr, axisStructSize);
+            dataPtr = reinterpret_cast<uint8_t*>(&_axis);
+            bytesRead = _wire->readBytes(dataPtr, axisStructSize);
             _hasAxisChanges = bytesRead == axisStructSize;
             break;
-        case mREQUEST_TYPE::PING_SLAVE:        
+        case COM_REQUEST_TYPE::KEY_DATA:
+            KeyEvent* keyEvent = new KeyEvent();
+            dataPtr = reinterpret_cast<uint8_t*>(&keyEvent);
+            bytesRead = _wire->readBytes(dataPtr, sizeof(KeyEvent));
+            _addKeyEventToQueue(keyEvent);
+            break;
+        case COM_REQUEST_TYPE::PING_SLAVE:        
             break;
         // default:
         //     break;

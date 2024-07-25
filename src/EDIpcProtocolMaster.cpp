@@ -1,3 +1,4 @@
+#ifdef ESP32
 #include "EDIpcProtocolMaster.h"
 #include <Logger.h>
 
@@ -175,3 +176,6 @@ bool EDIpcProtocolMaster::pingSlave()
     free(pong);
     return false;
 }
+
+
+#endif

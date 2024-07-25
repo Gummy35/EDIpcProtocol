@@ -1,3 +1,4 @@
+#ifdef ESP32
 #include "I2CDevice.h"
 
 I2CDevice::I2CDevice(uint8_t startAddress, uint8_t endAddress, const char * name, uint8_t interruptPin)
@@ -141,3 +142,4 @@ bool I2CDevice::getData(uint8_t messageId, uint8_t *receiveBuffer, size_t receiv
     }
     return true;
 }
+#endif

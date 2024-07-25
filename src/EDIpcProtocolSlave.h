@@ -19,13 +19,15 @@ public:
 
 protected:
     TwoWire* _wire;
-    mREQUEST_TYPE _currentRequestType;
+    COM_REQUEST_TYPE _currentRequestType;
     AxisStruct _axis;
     bool _hasAxisChanges;
     Joystick_* _joystick;
 
     void _handleRequest();
     void _handleReceivedData(int numBytes);
+    void _addKeyEventToQueue(KeyEvent* keyEvent);
+    void _processKeyEventQueue();
 };
 
 #endif

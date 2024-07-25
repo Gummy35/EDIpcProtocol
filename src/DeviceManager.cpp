@@ -1,3 +1,5 @@
+#ifdef ESP32
+
 #include "DeviceManager.h"
 
 void DeviceManager::AddDevice(IAbstractDevice *device)
@@ -48,3 +50,4 @@ void DeviceManager::Init()
   } 
 
 }
+#endif

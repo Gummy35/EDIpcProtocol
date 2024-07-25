@@ -1,5 +1,5 @@
 #pragma once
-
+#ifdef ESP32
 #include <IAbstractDevice.h>
 
 class I2CDevice: public IAbstractDevice
@@ -30,3 +30,4 @@ public:
     // 16: Data requested, but device return data not available
     // 17: Response data size mismatch
 };
+#endif
