@@ -96,6 +96,8 @@ bool I2CDevice::sendMessageData(uint8_t messageId, uint8_t *messageData, size_t 
         this->Wire->write(messageData, dataSize);
     }
     this->endTransmission();
+    Serial.printf("Wire send result = %d \n", LastError);
+
     return LastError == 0;
 }
 

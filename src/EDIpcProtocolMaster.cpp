@@ -1,10 +1,12 @@
 #ifdef ESP32
 #include "EDIpcProtocolMaster.h"
-#include <Logger.h>
-
-#define KEY_EVENT_QUEUE_SIZE 100
+#include "Logger.h"
 
 EDIpcProtocolMaster* EDIpcProtocolMaster::instance = nullptr;
+static StaticQueue_t _keyQueueBuffer;
+uint8_t _keyQueueStorage[KEY_EVENT_QUEUE_SIZE * sizeof(KeyEvent)];
+//QueueHandle_t _keyQueueHandle = xQueueCreateStatic(KEY_EVENT_QUEUE_SIZE, sizeof(KeyEvent), &(_keyQueueStorage[0]), &_keyQueueBuffer);;
+QueueHandle_t _keyQueueHandle;// = xQueueCreate(KEY_EVENT_QUEUE_SIZE, sizeof(KeyEvent*));
 
 EDIpcProtocolMaster::EDIpcProtocolMaster(I2CDevice *comMcu)
 {
@@ -15,20 +17,27 @@ EDIpcProtocolMaster::EDIpcProtocolMaster(I2CDevice *comMcu)
 
 bool EDIpcProtocolMaster::begin()
 {
-    _keyQueue = xQueueCreate(KEY_EVENT_QUEUE_SIZE, sizeof(KeyEvent));
-    if (_keyQueue == NULL) Serial.write("Failed to create key queue");
+    _keyQueueHandle = xQueueCreateStatic(KEY_EVENT_QUEUE_SIZE, sizeof(KeyEvent), _keyQueueStorage, &_keyQueueBuffer);
+    if (_keyQueueHandle == NULL) 
+    {
+        Serial.println("Failed to create key queue");
+        return false;
+    }
+    return true;
 }
 
 bool EDIpcProtocolMaster::sendKey(KeyEvent event)
 {
-    if (_keyQueue == NULL) {
+    if (_keyQueueHandle == NULL) {
         Logger.Log("Key queue unavailable");
         return false;
     }
-    if (xQueueSend(_keyQueue, &event, portMAX_DELAY) != pdPASS) {
+    if (xQueueSend(_keyQueueHandle, &event, portMAX_DELAY) != pdPASS) {
         Logger.Log("Failed to add item to the queue");
         return false;
     }
+    Serial.println("Key queued");
+
     return true;
 }
 
@@ -100,9 +109,7 @@ bool EDIpcProtocolMaster::_sendAxisData()
 bool EDIpcProtocolMaster::_sendKeyData(KeyEvent* keyEvent)
 {
     const size_t keyStructSize = sizeof(KeyEvent);
-    uint8_t *dataPtr = reinterpret_cast<uint8_t*>(&_axis);
-    comMcu->sendMessageData(COM_REQUEST_TYPE::KEY_DATA, dataPtr, keyStructSize);
-    return false;
+    return comMcu->sendMessageData(COM_REQUEST_TYPE::KEY_DATA, (uint8_t*)keyEvent, keyStructSize);
 }
 
 bool EDIpcProtocolMaster::_getGameFlags()
@@ -122,13 +129,14 @@ bool EDIpcProtocolMaster::_getKeypadConfig()
 
 void EDIpcProtocolMaster::sendChanges()
 {
-    if (_hasAxisChanges) {
-        if (_sendAxisData())
-            _hasAxisChanges = false;
-    }
+    // if (_hasAxisChanges) {
+    //     if (_sendAxisData())
+    //         _hasAxisChanges = false;
+    // }
 
     KeyEvent keyEvent;
-    while (xQueueReceive(_keyQueue, &keyEvent, 0) == pdPASS) {
+    while (xQueueReceive(_keyQueueHandle, &keyEvent, 0) == pdPASS) {
+        Serial.printf("Sending %d, %d, %d \n", keyEvent.key, keyEvent.count, keyEvent.pressed);
         _sendKeyData(&keyEvent);
     };
 }

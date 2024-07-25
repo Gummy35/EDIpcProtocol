@@ -3,6 +3,8 @@
 #include "EDIpcProtocol.h"
 #include "I2CDevice.h"
 
+#define KEY_EVENT_QUEUE_SIZE 10
+
 class EDIpcProtocolMaster {
 
 public:
@@ -20,8 +22,6 @@ protected:
     I2CDevice* comMcu;
     AxisStruct _axis;
     bool _hasAxisChanges;    
-    QueueHandle_t _keyQueue;
-
     bool _sendAxisData();
     bool _sendKeyData(KeyEvent* keyEvent);
     bool _getGameFlags();
