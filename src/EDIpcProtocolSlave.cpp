@@ -22,6 +22,13 @@ EDIpcProtocolSlave::EDIpcProtocolSlave(TwoWire *wire)
     _hasAxisChanges = false;
 }
 
+void EDIpcProtocolSlave::reset()
+{
+    _wire->flush();
+    _wire->end();
+    _wire->begin(0x12);
+}
+
 bool EDIpcProtocolSlave::begin()
 {
     _wire->onReceive(HandleReceivedData);

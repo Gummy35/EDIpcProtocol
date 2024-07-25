@@ -16,6 +16,7 @@ public:
     static void HandleRequest();
     static void HandleReceivedData(int numBytes);
     void updateDevices();
+    void reset();
 
 protected:
     TwoWire* _wire;
