@@ -19,7 +19,7 @@ EDIpcProtocolSlave::EDIpcProtocolSlave(TwoWire *wire, uint8_t signalMasterPin)
                               JOYSTICK_TYPE_MULTI_AXIS, 0, 0,
                               true, true, true, true, true, true,
                               false, false, false, false, false);
-    _currentRequestType = COM_REQUEST_TYPE::NONE;
+    _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     _hasAxisChanges = false;
 }
 
@@ -157,19 +157,19 @@ void EDIpcProtocolSlave::_handleRequest()
     size_t l;
     char buffer[100];
 
-    if (_currentRequestType == COM_REQUEST_TYPE::GET_UPDATES) {
+    if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_UPDATES) {
         Wire.write(_updateFlag);
-        _currentRequestType = COM_REQUEST_TYPE::NONE;
-    } else if (_currentRequestType == COM_REQUEST_TYPE::PING_SLAVE) {
+        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
+    } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_PING_SLAVE) {
         Wire.print(F("Pong"));
         Wire.write(0);
-        _currentRequestType = COM_REQUEST_TYPE::NONE;
-    } else if (_currentRequestType == COM_REQUEST_TYPE::GET_LOCATION) {
+        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
+    } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOCATION) {
         Wire.println(LocationSystemName);
         Wire.println(LocationStationName);
         Wire.write(0);
-        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::LOCATION)));
-        _currentRequestType = COM_REQUEST_TYPE::NONE;
+        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
+        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     }
 }
 
@@ -179,7 +179,7 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
     uint8_t *dataPtr;
     size_t bytesRead;
     _currentRequestType = static_cast<COM_REQUEST_TYPE>((uint8_t)requestVal);
-    if (_currentRequestType == COM_REQUEST_TYPE::TRACKER_DATA)
+    if (_currentRequestType == COM_REQUEST_TYPE::CRT_SEND_TRACKER_DATA)
     {
         Serial.println("tracker");
         const size_t axisStructSize = sizeof(AxisStruct);
@@ -187,17 +187,17 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
         bytesRead = _wire->readBytes(dataPtr, axisStructSize);
         _hasAxisChanges = bytesRead == axisStructSize;
     } 
-    else if (_currentRequestType == COM_REQUEST_TYPE::KEY_DATA)
+    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_SEND_KEY_DATA)
     {
         KeyEvent *keyEvent = new KeyEvent();
         bytesRead = _wire->readBytes((uint8_t *)keyEvent, sizeof(KeyEvent));
         _addKeyEventToQueue(keyEvent);
     } 
-    else if (_currentRequestType == COM_REQUEST_TYPE::PING_SLAVE)
+    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_PING_SLAVE)
     {
         Serial.println("ping");
     }
-    else if (_currentRequestType == COM_REQUEST_TYPE::GET_LOCATION)
+    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOCATION)
     {
         Serial.println("Location");
     }

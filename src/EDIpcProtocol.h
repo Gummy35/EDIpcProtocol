@@ -18,25 +18,23 @@ struct KeyEvent {
 };
 
 enum class UPDATE_CATEGORY: uint8_t {
-    KEYPAD = 1,
-    GAME_FLAGS = 2,
-    STATUS = 4,
-    TARGET = 8,
-    LOCATION = 16,
-    LOADOUT = 32
+    UC_KEYPAD = 1,
+    UC_GAME_FLAGS = 2,
+    UC_STATUS = 4,
+    UC_TARGET = 8,
+    UC_LOCATION = 16,
+    UC_LOADOUT = 32
 };
 
 enum class COM_REQUEST_TYPE: uint8_t {
-    NONE = 0,
+    CRT_NONE = 0,
     //GET_STAR_SYSTEM = 0,
-    GET_UPDATES = 1,
-    
-    GET_STATUS = 5,
-    GET_TARGET = 9,
-    GET_LOCATION = 17,
-    GET_LOADOUT = 33,
-
-    TRACKER_DATA = 128,
-    KEY_DATA = 129,
-    PING_SLAVE = 255
+    CRT_GET_UPDATES = 1,    
+    CRT_GET_STATUS = 5,
+    CRT_GET_TARGET = 9,
+    CRT_GET_LOCATION = 17,
+    CRT_GET_LOADOUT = 33,
+    CRT_SEND_TRACKER_DATA = 128,
+    CRT_SEND_KEY_DATA = 129,
+    CRT_GET_PING_SLAVE = 255
 };
