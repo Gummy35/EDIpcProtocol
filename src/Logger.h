@@ -4,10 +4,10 @@ class LoggerClass
 {
     public:
         LoggerClass();
-        void SetLogger(std::function<void(const char *logString)> log);
+        void SetLogger(void (*log)(const char *logString));
         void Log(const char *logString);
     private:        
-        std::function<void(const char *logString)> _logfunc;
+        void (*_logfunc)(const char *logString) = nullptr;
 };
 
 extern LoggerClass Logger;

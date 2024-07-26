@@ -5,7 +5,7 @@ LoggerClass::LoggerClass()
     _logfunc = nullptr;
 }
 
-void LoggerClass::SetLogger(std::function<void(const char *logString)> log)
+void LoggerClass::SetLogger(void (*log)(const char *logString))
 {
     _logfunc = log;
 }

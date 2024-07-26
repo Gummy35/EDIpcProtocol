@@ -11,11 +11,16 @@ class EDIpcProtocolSlave {
 public:
     static EDIpcProtocolSlave* instance;
 
-    EDIpcProtocolSlave(TwoWire* wire);
+    char LocationSystemName[21];
+    char LocationStationName[21];
+
+    EDIpcProtocolSlave(TwoWire* wire, uint8_t signalMasterPin);
     bool begin();
     static void HandleRequest();
     static void HandleReceivedData(int numBytes);
     void updateDevices();
+    void addUpdate(UPDATE_CATEGORY flag);
+    void signalMaster();
     void reset();
 
 protected:
@@ -24,7 +29,8 @@ protected:
     AxisStruct _axis;
     bool _hasAxisChanges;
     Joystick_* _joystick;
-
+    uint8_t _updateFlag = 0;
+    uint8_t _signalMasterPin;
     void _handleRequest();
     void _handleReceivedData(int numBytes);
     void _addKeyEventToQueue(KeyEvent* keyEvent);

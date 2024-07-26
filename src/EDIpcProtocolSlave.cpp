@@ -10,9 +10,10 @@ volatile int _keyQueueCount = 0;
 
 EDIpcProtocolSlave *EDIpcProtocolSlave::instance = nullptr;
 
-EDIpcProtocolSlave::EDIpcProtocolSlave(TwoWire *wire)
+EDIpcProtocolSlave::EDIpcProtocolSlave(TwoWire *wire, uint8_t signalMasterPin)
 {
     _wire = wire;
+    _signalMasterPin = signalMasterPin;
     instance = this;
     _joystick = new Joystick_(JOYSTICK_DEFAULT_REPORT_ID,
                               JOYSTICK_TYPE_MULTI_AXIS, 0, 0,
@@ -30,7 +31,13 @@ void EDIpcProtocolSlave::reset()
 }
 
 bool EDIpcProtocolSlave::begin()
-{
+{    
+    for(int i=0;i<20;i++)
+    {
+        LocationStationName[i] = 0;
+        LocationSystemName[i] = 0;
+    }
+
     _wire->onReceive(HandleReceivedData);
     _wire->onRequest(HandleRequest);
 
@@ -73,6 +80,18 @@ void EDIpcProtocolSlave::updateDevices()
         _hasAxisChanges = false;
     }
     _processKeyEventQueue();
+}
+
+void EDIpcProtocolSlave::addUpdate(UPDATE_CATEGORY flag)
+{
+    _updateFlag |= (uint8_t)flag;
+}
+
+void EDIpcProtocolSlave::signalMaster()
+{
+    digitalWrite(_signalMasterPin, LOW);
+    delay(10);
+    digitalWrite(_signalMasterPin, HIGH);
 }
 
 void EDIpcProtocolSlave::_processKeyEventQueue()
@@ -138,15 +157,19 @@ void EDIpcProtocolSlave::_handleRequest()
     size_t l;
     char buffer[100];
 
-    switch (_currentRequestType)
-    {
-    case COM_REQUEST_TYPE::PING_SLAVE:
+    if (_currentRequestType == COM_REQUEST_TYPE::GET_UPDATES) {
+        Wire.write(_updateFlag);
+        _currentRequestType = COM_REQUEST_TYPE::NONE;
+    } else if (_currentRequestType == COM_REQUEST_TYPE::PING_SLAVE) {
         Wire.print(F("Pong"));
         Wire.write(0);
         _currentRequestType = COM_REQUEST_TYPE::NONE;
-        break;
-    default:
-        break;
+    } else if (_currentRequestType == COM_REQUEST_TYPE::GET_LOCATION) {
+        Wire.println(LocationSystemName);
+        Wire.println(LocationStationName);
+        Wire.write(0);
+        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::LOCATION)));
+        _currentRequestType = COM_REQUEST_TYPE::NONE;
     }
 }
 
@@ -173,6 +196,10 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
     else if (_currentRequestType == COM_REQUEST_TYPE::PING_SLAVE)
     {
         Serial.println("ping");
+    }
+    else if (_currentRequestType == COM_REQUEST_TYPE::GET_LOCATION)
+    {
+        Serial.println("Location");
     }
 }
 
