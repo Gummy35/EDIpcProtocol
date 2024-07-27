@@ -32,11 +32,10 @@ void EDIpcProtocolSlave::reset()
 
 bool EDIpcProtocolSlave::begin()
 {    
-    for(int i=0;i<20;i++)
-    {
-        LocationStationName[i] = 0;
-        LocationSystemName[i] = 0;
-    }
+    memset(LocationStationName, 0, 21);
+    memset(LocationSystemName, 0, 21);
+    memset(InfosCommanderName, 0, 21);
+    memset(InfosShipName, 0, 21);
 
     _wire->onReceive(HandleReceivedData);
     _wire->onRequest(HandleRequest);
@@ -171,8 +170,17 @@ void EDIpcProtocolSlave::_handleRequest()
         Wire.write(0);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
+    } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_INFOS) {
+        Wire.print(InfosCommanderName);
+        Wire.print('\t');
+        Wire.print(InfosShipName);
+        Wire.write(0);
+        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_INFOS)));
+        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     }
 }
+
+void(* resetFunc) (void) = 0;
 
 void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
 {
@@ -201,6 +209,14 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
     else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOCATION)
     {
         // Serial.println("L\tLocation request from master");
+    }
+    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_INFOS)
+    {
+        // Serial.println("L\tLocation request from master");
+    }
+    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_SEND_REBOOT)
+    {
+        resetFunc();
     }
 }
 

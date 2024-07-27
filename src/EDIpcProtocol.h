@@ -23,7 +23,8 @@ enum class UPDATE_CATEGORY: uint8_t {
     UC_STATUS = 4,
     UC_TARGET = 8,
     UC_LOCATION = 16,
-    UC_LOADOUT = 32
+    UC_LOADOUT = 32,
+    UC_INFOS = 64
 };
 
 enum class COM_REQUEST_TYPE: uint8_t {
@@ -34,6 +35,7 @@ enum class COM_REQUEST_TYPE: uint8_t {
     CRT_GET_TARGET = 9,
     CRT_GET_LOCATION = 17,
     CRT_GET_LOADOUT = 33,
+    CRT_GET_INFOS = 65,
     CRT_SEND_TRACKER_DATA = 128,
     CRT_SEND_KEY_DATA = 129,
     CRT_SEND_REBOOT = 130,
