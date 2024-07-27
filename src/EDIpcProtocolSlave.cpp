@@ -175,9 +175,8 @@ void EDIpcProtocolSlave::_handleRequest()
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_INFOS)));
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_STATUS) {
-        Wire.write(EDGameVariables.flags1);
-        Wire.write(EDGameVariables.flags2);
-        Wire.print('\t');
+        Wire.write((uint8_t *)(&EDGameVariables.flags1), 4);
+        Wire.write((uint8_t *)(&EDGameVariables.flags2), 4);
         Wire.print(EDGameVariables.StatusLegal);
         Wire.write(0);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_STATUS)));
