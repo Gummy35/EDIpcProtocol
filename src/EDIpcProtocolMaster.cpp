@@ -1,6 +1,7 @@
 #ifdef ESP32
 #include "EDIpcProtocolMaster.h"
 #include "Logger.h"
+#include <WebSerial.h>
 
 EDIpcProtocolMaster* EDIpcProtocolMaster::instance = nullptr;
 static StaticQueue_t _keyQueueBuffer;
@@ -13,6 +14,8 @@ EDIpcProtocolMaster::EDIpcProtocolMaster(I2CDevice *comMcu)
     this->comMcu = comMcu;
     instance = this;
     _hasAxisChanges = false;
+    memset(LocationSystemName, 0, 21);
+    memset(LocationStationName, 0, 21);
 }
 
 bool EDIpcProtocolMaster::begin()
@@ -102,14 +105,14 @@ bool EDIpcProtocolMaster::_sendAxisData()
 {
     const size_t axisStructSize = sizeof(AxisStruct);
     uint8_t *dataPtr = reinterpret_cast<uint8_t*>(&_axis);
-    comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::TRACKER_DATA, dataPtr, axisStructSize);
+    comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::CRT_SEND_TRACKER_DATA, dataPtr, axisStructSize);
     return false;
 }
 
 bool EDIpcProtocolMaster::_sendKeyData(KeyEvent* keyEvent)
 {
     const size_t keyStructSize = sizeof(KeyEvent);
-    return comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::KEY_DATA, (uint8_t*)keyEvent, keyStructSize);
+    return comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::CRT_SEND_KEY_DATA, (uint8_t*)keyEvent, keyStructSize);
 }
 
 bool EDIpcProtocolMaster::_getGameFlags()
@@ -124,6 +127,36 @@ bool EDIpcProtocolMaster::_getGameInfo()
 
 bool EDIpcProtocolMaster::_getKeypadConfig()
 {
+    return false;
+}
+
+uint8_t getDataFromBuffer(char* dst, char* src, uint8_t maxl, char separator)
+{
+    uint8_t pos = 0;
+    while ((pos < maxl) && (src[pos] != separator)) {
+        dst[pos] = src[pos];
+        pos++;
+    }
+    dst[pos] = 0;
+    while (src[pos] != separator)
+        pos++;
+
+    return pos+1;
+}
+
+bool EDIpcProtocolMaster::_getLocationData()
+{
+    char receiveBuffer[50];    
+    uint8_t pos = 0;
+    
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_LOCATION, (uint8_t *)receiveBuffer, 50, false)) {
+        Logger.Log(receiveBuffer);
+        pos = getDataFromBuffer(LocationSystemName, receiveBuffer, 20, '\t');
+        Logger.Log(LocationSystemName);
+        getDataFromBuffer(LocationStationName, receiveBuffer+pos, 20, '\0');
+        Logger.Log(LocationStationName);
+        
+    }
     return false;
 }
 
@@ -147,25 +180,35 @@ uint8_t EDIpcProtocolMaster::retrieveChanges()
     uint8_t updateFlags;
     uint8_t *dataPtr = reinterpret_cast<uint8_t*>(&_lastUpdate);
     uint8_t *receiveBuffer = reinterpret_cast<uint8_t *>(&updateFlags);
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::GET_UPDATES, receiveBuffer, 1, true, dataPtr, sizeof(unsigned long)))
+    //if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_UPDATES, receiveBuffer, 1, true, dataPtr, sizeof(unsigned long)))
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_UPDATES, receiveBuffer, 1, true))
     {
+        WebSerial.print("Get update flag : ");
+        WebSerial.println(receiveBuffer[0], 2);
         result = true;
-        if (updateFlags & (uint8_t)UPDATE_CATEGORY::GAME_FLAGS)
+        if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_GAME_FLAGS)
         {
-            Serial.println("Game flags changes");
+            WebSerial.println("Game flags changes");
             result &= _getGameFlags();
         }
-        if (updateFlags & (uint8_t)UPDATE_CATEGORY::GAME_INFO)
+        // if (updateFlags & (uint8_t)UPDATE_CATEGORY::Uc_GAME_INFO)
+        // {
+        //     Serial.println("Game info changes");
+        //     result &= _getGameInfo();
+        // }
+        if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_LOCATION)
         {
-            Serial.println("Game info changes");
-            result &= _getGameInfo();
+            WebSerial.printf("Location data changes. Old : %s / %s\n", LocationSystemName, LocationStationName);
+            result &= _getLocationData();
+            WebSerial.printf("New : %s / %s\n", LocationSystemName, LocationStationName);
         }
-        if (updateFlags & (uint8_t)UPDATE_CATEGORY::KEYPAD)
+
+        if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_KEYPAD)
         {
             Serial.println("Keypad config changes");
             result &= _getKeypadConfig();
         }
-        
+
         return updateFlags;    
     }
     return 0;
@@ -173,17 +216,19 @@ uint8_t EDIpcProtocolMaster::retrieveChanges()
 
 bool EDIpcProtocolMaster::pingSlave()
 {    
-    char* pong;
-    pong = (char *)malloc(10);
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::PING_SLAVE, (uint8_t *)pong, 5))
+    bool res = false;
+    char pong[10];
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_PING_SLAVE, (uint8_t *)pong, 9))
     {
-        Serial.println(pong);
-        free(pong);
-        return true;
+        WebSerial.println(pong);
+        res = true;
     }
-    free(pong);
-    return false;
+    return res;
 }
 
+bool EDIpcProtocolMaster::resetSlave()
+{
+    return comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::CRT_SEND_REBOOT);
+}
 
 #endif
