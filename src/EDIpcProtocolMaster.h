@@ -15,6 +15,7 @@ public:
     void setAxis(int32_t x, int32_t y, int32_t z, int32_t rx, int32_t ry, int32_t rz);
     void sendChanges();
     uint8_t retrieveChanges();
+    void getAllSlaveData();
     bool pingSlave();
     bool resetSlave();
     bool sendKey(KeyEvent event);
@@ -25,7 +26,7 @@ protected:
     bool _hasAxisChanges;    
     bool _sendAxisData();
     bool _sendKeyData(KeyEvent* keyEvent);
-    bool _getGameFlags();
+    bool _getGameStatus();
     bool _getGameInfo();
     bool _getKeypadConfig();
     bool _getWifiCredentials();
