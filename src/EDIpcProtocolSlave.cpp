@@ -1,6 +1,8 @@
 #ifndef ESP32
 
 #include "EDIpcProtocolSlave.h"
+#include <EDGameVariables.h>
+
 #define KEY_EVENT_QUEUE_SIZE 10
 
 KeyEvent *_keyQueue[KEY_EVENT_QUEUE_SIZE];
@@ -32,11 +34,6 @@ void EDIpcProtocolSlave::reset()
 
 bool EDIpcProtocolSlave::begin()
 {    
-    memset(LocationStationName, 0, 21);
-    memset(LocationSystemName, 0, 21);
-    memset(InfosCommanderName, 0, 21);
-    memset(InfosShipName, 0, 21);
-
     _wire->onReceive(HandleReceivedData);
     _wire->onRequest(HandleRequest);
 
@@ -164,16 +161,16 @@ void EDIpcProtocolSlave::_handleRequest()
         Wire.write(0);
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOCATION) {
-        Wire.print(LocationSystemName);
+        Wire.print(EDGameVariables.LocationSystemName);
         Wire.print('\t');
-        Wire.print(LocationStationName);
+        Wire.print(EDGameVariables.LocationStationName);
         Wire.write(0);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_INFOS) {
-        Wire.print(InfosCommanderName);
+        Wire.print(EDGameVariables.InfosCommanderName);
         Wire.print('\t');
-        Wire.print(InfosShipName);
+        Wire.print(EDGameVariables.InfosShipName);
         Wire.write(0);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_INFOS)));
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;

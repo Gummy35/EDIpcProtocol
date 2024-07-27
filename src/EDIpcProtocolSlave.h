@@ -11,11 +11,6 @@ class EDIpcProtocolSlave {
 public:
     static EDIpcProtocolSlave* instance;
 
-    char LocationSystemName[21];
-    char LocationStationName[21];
-    char InfosCommanderName[21];
-    char InfosShipName[21];
-
     EDIpcProtocolSlave(TwoWire* wire, uint8_t signalMasterPin);
     bool begin();
     static void HandleRequest();
