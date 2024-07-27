@@ -174,6 +174,14 @@ void EDIpcProtocolSlave::_handleRequest()
         Wire.write(0);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_INFOS)));
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
+    } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_STATUS) {
+        Wire.write(EDGameVariables.flags1);
+        Wire.write(EDGameVariables.flags2);
+        Wire.print('\t');
+        Wire.print(EDGameVariables.StatusLegal);
+        Wire.write(0);
+        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_STATUS)));
+        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     }
 }
 
@@ -208,6 +216,10 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
         // Serial.println("L\tLocation request from master");
     }
     else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_INFOS)
+    {
+        // Serial.println("L\tLocation request from master");
+    }
+    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_STATUS)
     {
         // Serial.println("L\tLocation request from master");
     }
