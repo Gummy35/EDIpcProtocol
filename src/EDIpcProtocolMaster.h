@@ -10,10 +10,6 @@ class EDIpcProtocolMaster {
 public:
     static EDIpcProtocolMaster* instance;
 
-
-    char LocationSystemName[21];
-    char LocationStationName[21];
-
     EDIpcProtocolMaster(I2CDevice* comMcu);
     bool begin();
     void setAxis(int32_t x, int32_t y, int32_t z, int32_t rx, int32_t ry, int32_t rz);
@@ -34,6 +30,7 @@ protected:
     bool _getKeypadConfig();
     bool _getWifiCredentials();
     bool _getLocationData();
+    bool _getGameInfosData();
 
     unsigned long _lastUpdate = 0;
 };
