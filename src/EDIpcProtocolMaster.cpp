@@ -114,21 +114,6 @@ bool EDIpcProtocolMaster::_sendKeyData(KeyEvent* keyEvent)
     return comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::CRT_SEND_KEY_DATA, (uint8_t*)keyEvent, keyStructSize);
 }
 
-bool EDIpcProtocolMaster::_getGameFlags()
-{
-    return false;
-}
-
-bool EDIpcProtocolMaster::_getGameInfo()
-{
-    return false;
-}
-
-bool EDIpcProtocolMaster::_getKeypadConfig()
-{
-    return false;
-}
-
 uint8_t getDataFromBuffer(char* dst, char* src, uint8_t maxl, char separator)
 {
     uint8_t pos = 0;
@@ -141,6 +126,35 @@ uint8_t getDataFromBuffer(char* dst, char* src, uint8_t maxl, char separator)
         pos++;
 
     return pos+1;
+}
+
+
+
+bool EDIpcProtocolMaster::_getGameStatus()
+{
+    char receiveBuffer[50];    
+    uint8_t pos = 0;   
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_STATUS, (uint8_t *)receiveBuffer, 50, false)) {
+        memcpy(&(EDGameVariables.StatusFlags1), receiveBuffer, 4);
+        WebSerial.println(EDGameVariables.StatusFlags1);
+        memcpy(&(EDGameVariables.StatusFlags2), receiveBuffer+4, 4);
+        WebSerial.println(EDGameVariables.StatusFlags2);
+        getDataFromBuffer(EDGameVariables.StatusLegal, receiveBuffer + 8, 20, '\0');
+        WebSerial.println(EDGameVariables.StatusLegal);
+        WebSerial.println(receiveBuffer+8);
+    }
+    return false;
+
+}
+
+bool EDIpcProtocolMaster::_getGameInfo()
+{
+    return false;
+}
+
+bool EDIpcProtocolMaster::_getKeypadConfig()
+{
+    return false;
 }
 
 bool EDIpcProtocolMaster::_getLocationData()
@@ -194,10 +208,10 @@ uint8_t EDIpcProtocolMaster::retrieveChanges()
         WebSerial.print("Get update flag : ");
         WebSerial.println(receiveBuffer[0], 2);
         result = true;
-        if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_GAME_FLAGS)
+        if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_STATUS)
         {
-            WebSerial.println("Game flags changes");
-            result &= _getGameFlags();
+            WebSerial.println("Game status flags");
+            result &= _getGameStatus();
         }
         // if (updateFlags & (uint8_t)UPDATE_CATEGORY::Uc_GAME_INFO)
         // {
@@ -226,6 +240,13 @@ uint8_t EDIpcProtocolMaster::retrieveChanges()
         return updateFlags;    
     }
     return 0;
+}
+
+void EDIpcProtocolMaster::getAllSlaveData()
+{
+    _getGameStatus();
+    _getLocationData();
+    _getGameInfosData();
 }
 
 bool EDIpcProtocolMaster::pingSlave()
