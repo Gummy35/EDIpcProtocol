@@ -22,6 +22,7 @@ public:
     void addUpdate(UPDATE_CATEGORY flag);
     void signalMaster();
     void reset();
+    uint8_t _updateFlag = 0;
 
 protected:
     TwoWire* _wire;
@@ -29,7 +30,6 @@ protected:
     AxisStruct _axis;
     bool _hasAxisChanges;
     Joystick_* _joystick;
-    uint8_t _updateFlag = 0;
     uint8_t _signalMasterPin;
     void _handleRequest();
     void _handleReceivedData(int numBytes);

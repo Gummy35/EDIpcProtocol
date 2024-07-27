@@ -165,8 +165,9 @@ void EDIpcProtocolSlave::_handleRequest()
         Wire.write(0);
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOCATION) {
-        Wire.println(LocationSystemName);
-        Wire.println(LocationStationName);
+        Wire.print(LocationSystemName);
+        Wire.print('\t');
+        Wire.print(LocationStationName);
         Wire.write(0);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
@@ -195,11 +196,11 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
     } 
     else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_PING_SLAVE)
     {
-        Serial.println("ping");
+        //Serial.println("L\tPing from master");
     }
     else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOCATION)
     {
-        Serial.println("Location");
+        // Serial.println("L\tLocation request from master");
     }
 }
 
