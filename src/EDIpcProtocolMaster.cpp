@@ -1,5 +1,6 @@
 #ifdef ESP32
 #include "EDIpcProtocolMaster.h"
+#include <EDGameVariables.h>
 #include "Logger.h"
 #include <WebSerial.h>
 
@@ -14,8 +15,6 @@ EDIpcProtocolMaster::EDIpcProtocolMaster(I2CDevice *comMcu)
     this->comMcu = comMcu;
     instance = this;
     _hasAxisChanges = false;
-    memset(LocationSystemName, 0, 21);
-    memset(LocationStationName, 0, 21);
 }
 
 bool EDIpcProtocolMaster::begin()
@@ -150,15 +149,24 @@ bool EDIpcProtocolMaster::_getLocationData()
     uint8_t pos = 0;
     
     if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_LOCATION, (uint8_t *)receiveBuffer, 50, false)) {
-        Logger.Log(receiveBuffer);
-        pos = getDataFromBuffer(LocationSystemName, receiveBuffer, 20, '\t');
-        Logger.Log(LocationSystemName);
-        getDataFromBuffer(LocationStationName, receiveBuffer+pos, 20, '\0');
-        Logger.Log(LocationStationName);
-        
+        pos = getDataFromBuffer(EDGameVariables.LocationSystemName, receiveBuffer, 20, '\t');
+        getDataFromBuffer(EDGameVariables.LocationStationName, receiveBuffer+pos, 20, '\0');
     }
     return false;
 }
+
+bool EDIpcProtocolMaster::_getGameInfosData()
+{
+    char receiveBuffer[50];    
+    uint8_t pos = 0;
+    
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_INFOS, (uint8_t *)receiveBuffer, 50, false)) {
+        pos = getDataFromBuffer(EDGameVariables.InfosCommanderName, receiveBuffer, 20, '\t');
+        getDataFromBuffer(EDGameVariables.InfosShipName, receiveBuffer+pos, 20, '\0');       
+    }
+    return false;
+}
+
 
 void EDIpcProtocolMaster::sendChanges()
 {
@@ -198,9 +206,15 @@ uint8_t EDIpcProtocolMaster::retrieveChanges()
         // }
         if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_LOCATION)
         {
-            WebSerial.printf("Location data changes. Old : %s / %s\n", LocationSystemName, LocationStationName);
+            WebSerial.printf("Location data changes. Old : %s / %s\n", EDGameVariables.LocationSystemName, EDGameVariables.LocationStationName);
             result &= _getLocationData();
-            WebSerial.printf("New : %s / %s\n", LocationSystemName, LocationStationName);
+            WebSerial.printf("New : %s / %s\n", EDGameVariables.LocationSystemName, EDGameVariables.LocationStationName);
+        }
+
+        if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_INFOS)
+        {
+            result &= _getGameInfosData();
+            WebSerial.printf("New game infos : %s / %s\n", EDGameVariables.InfosCommanderName, EDGameVariables.InfosShipName);
         }
 
         if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_KEYPAD)
