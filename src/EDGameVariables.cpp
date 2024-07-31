@@ -8,6 +8,9 @@ EDGameVariablesClass::EDGameVariablesClass()
     memset(LocationSystemName, 0, 21);
     memset(LocationSystemName, 0, 21);
     memset(StatusLegal, 0, 21);
+    memset(Navroute1, 0, 21);
+    memset(Navroute2, 0, 21);
+    memset(Navroute3, 0, 21);
 }
 
 bool EDGameVariablesClass::IsDocked()

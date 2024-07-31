@@ -24,7 +24,7 @@ enum class UPDATE_CATEGORY: uint8_t {
     UC_TARGET = 8,
     UC_LOCATION = 16,
     UC_LOADOUT = 32,
-    UC_INFOS = 64
+    UC_INFOS = 64,
 };
 
 enum class COM_REQUEST_TYPE: uint8_t {

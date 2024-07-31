@@ -59,6 +59,9 @@ public:
 
     char LocationSystemName[21];
     char LocationStationName[21];
+    char Navroute1[21];
+    char Navroute2[21];
+    char Navroute3[21];
     char InfosCommanderName[21];
     char InfosShipName[21];
     char StatusLegal[21];

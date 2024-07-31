@@ -164,6 +164,12 @@ void EDIpcProtocolSlave::_handleRequest()
         Wire.print(EDGameVariables.LocationSystemName);
         Wire.print('\t');
         Wire.print(EDGameVariables.LocationStationName);
+        Wire.print('\t');
+        Wire.print(EDGameVariables.Navroute1);
+        Wire.print('\t');
+        Wire.print(EDGameVariables.Navroute2);
+        Wire.print('\t');
+        Wire.print(EDGameVariables.Navroute3);
         Wire.write(0);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
@@ -176,7 +182,7 @@ void EDIpcProtocolSlave::_handleRequest()
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_STATUS) {
         Wire.write((uint8_t *)(&EDGameVariables.StatusFlags1), 4);
-        Wire.write((uint8_t *)(&EDGameVariables.StatusFlags2), 4);
+        Wire.write((uint8_t *)(&EDGameVariables.StatusFlags2), 4);        
         Wire.print(EDGameVariables.StatusLegal);
         Wire.write(0);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_STATUS)));
