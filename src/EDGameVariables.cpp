@@ -3,14 +3,16 @@
 
 EDGameVariablesClass::EDGameVariablesClass()
 {
-    memset(InfosCommanderName, 0, 21);
-    memset(InfosShipName, 0, 21);
     memset(LocationSystemName, 0, 21);
-    memset(LocationSystemName, 0, 21);
-    memset(StatusLegal, 0, 21);
+    memset(LocationStationName, 0, 21);
+    memset(LocalAllegiance, 0, 21);
+    memset(SystemSecurity, 0, 21);
     memset(Navroute1, 0, 21);
     memset(Navroute2, 0, 21);
     memset(Navroute3, 0, 21);
+    memset(InfosCommanderName, 0, 21);
+    memset(InfosShipName, 0, 21);
+    memset(StatusLegal, 0, 21);
 }
 
 bool EDGameVariablesClass::IsDocked()

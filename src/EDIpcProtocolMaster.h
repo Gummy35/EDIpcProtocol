@@ -14,7 +14,7 @@ public:
     bool begin();
     void setAxis(int32_t x, int32_t y, int32_t z, int32_t rx, int32_t ry, int32_t rz);
     void sendChanges();
-    uint8_t retrieveChanges();
+    uint8_t retrieveChanges(bool forceAll = false);
     void getAllSlaveData();
     bool pingSlave();
     bool resetSlave();

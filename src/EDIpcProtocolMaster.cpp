@@ -159,12 +159,18 @@ bool EDIpcProtocolMaster::_getKeypadConfig()
 
 bool EDIpcProtocolMaster::_getLocationData()
 {
-    char receiveBuffer[50];    
+    char receiveBuffer[160];    
     uint8_t pos = 0;
     
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_LOCATION, (uint8_t *)receiveBuffer, 50, false)) {
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_LOCATION, (uint8_t *)receiveBuffer, 160, false)) {
+        Serial.println(receiveBuffer);
         pos = getDataFromBuffer(EDGameVariables.LocationSystemName, receiveBuffer, 20, '\t');
-        getDataFromBuffer(EDGameVariables.LocationStationName, receiveBuffer+pos, 20, '\0');
+        pos += getDataFromBuffer(EDGameVariables.LocationStationName, receiveBuffer+pos, 20, '\t');
+        pos += getDataFromBuffer(EDGameVariables.LocalAllegiance, receiveBuffer+pos, 20, '\t');
+        pos += getDataFromBuffer(EDGameVariables.SystemSecurity, receiveBuffer+pos, 20, '\t');
+        pos += getDataFromBuffer(EDGameVariables.Navroute1, receiveBuffer+pos, 20, '\t');
+        pos += getDataFromBuffer(EDGameVariables.Navroute2, receiveBuffer+pos, 20, '\t');
+        getDataFromBuffer(EDGameVariables.Navroute3, receiveBuffer+pos, 20, '\0');
     }
     return false;
 }
@@ -196,19 +202,19 @@ void EDIpcProtocolMaster::sendChanges()
     };
 }
 
-uint8_t EDIpcProtocolMaster::retrieveChanges()
+uint8_t EDIpcProtocolMaster::retrieveChanges(bool forceAll)
 {
     bool result = false;
     uint8_t updateFlags;
     uint8_t *dataPtr = reinterpret_cast<uint8_t*>(&_lastUpdate);
     uint8_t *receiveBuffer = reinterpret_cast<uint8_t *>(&updateFlags);
     //if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_UPDATES, receiveBuffer, 1, true, dataPtr, sizeof(unsigned long)))
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_UPDATES, receiveBuffer, 1, true))
+    if (forceAll || comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_UPDATES, receiveBuffer, 1, true))
     {
-        WebSerial.print("Get update flag : ");
-        WebSerial.println(receiveBuffer[0], 2);
+        // WebSerial.print("Get update flag : ");
+        // WebSerial.println(receiveBuffer[0], 2);
         result = true;
-        if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_STATUS)
+        if (forceAll || (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_STATUS))
         {
             WebSerial.println("Game status flags");
             result &= _getGameStatus();
@@ -218,14 +224,14 @@ uint8_t EDIpcProtocolMaster::retrieveChanges()
         //     Serial.println("Game info changes");
         //     result &= _getGameInfo();
         // }
-        if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_LOCATION)
+        if (forceAll || (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_LOCATION))
         {
             WebSerial.printf("Location data changes. Old : %s / %s\n", EDGameVariables.LocationSystemName, EDGameVariables.LocationStationName);
             result &= _getLocationData();
             WebSerial.printf("New : %s / %s\n", EDGameVariables.LocationSystemName, EDGameVariables.LocationStationName);
         }
 
-        if (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_INFOS)
+        if (forceAll || (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_INFOS))
         {
             result &= _getGameInfosData();
             WebSerial.printf("New game infos : %s / %s\n", EDGameVariables.InfosCommanderName, EDGameVariables.InfosShipName);
