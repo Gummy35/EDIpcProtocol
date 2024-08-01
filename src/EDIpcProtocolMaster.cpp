@@ -159,18 +159,37 @@ bool EDIpcProtocolMaster::_getKeypadConfig()
 
 bool EDIpcProtocolMaster::_getLocationData()
 {
-    char receiveBuffer[160];    
+    char receiveBuffer[50];    
     uint8_t pos = 0;
     
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_LOCATION, (uint8_t *)receiveBuffer, 160, false)) {
-        Serial.println(receiveBuffer);
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_LOCATION, (uint8_t *)receiveBuffer, 50, false)) {
         pos = getDataFromBuffer(EDGameVariables.LocationSystemName, receiveBuffer, 20, '\t');
-        pos += getDataFromBuffer(EDGameVariables.LocationStationName, receiveBuffer+pos, 20, '\t');
-        pos += getDataFromBuffer(EDGameVariables.LocalAllegiance, receiveBuffer+pos, 20, '\t');
-        pos += getDataFromBuffer(EDGameVariables.SystemSecurity, receiveBuffer+pos, 20, '\t');
-        pos += getDataFromBuffer(EDGameVariables.Navroute1, receiveBuffer+pos, 20, '\t');
+        getDataFromBuffer(EDGameVariables.LocationStationName, receiveBuffer+pos, 20, '\0');
+    }
+    return false;
+}
+
+bool EDIpcProtocolMaster::_getNavRouteData()
+{
+    char receiveBuffer[80];    
+    uint8_t pos = 0;
+    
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_NAVROUTE, (uint8_t *)receiveBuffer, 80, false)) {
+        pos += getDataFromBuffer(EDGameVariables.Navroute1, receiveBuffer, 20, '\t');
         pos += getDataFromBuffer(EDGameVariables.Navroute2, receiveBuffer+pos, 20, '\t');
         getDataFromBuffer(EDGameVariables.Navroute3, receiveBuffer+pos, 20, '\0');
+    }
+    return false;
+}
+
+bool EDIpcProtocolMaster::_getSystemPolicyData()
+{
+    char receiveBuffer[50];    
+    uint8_t pos = 0;
+    
+    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_SYSTEM_POLICY, (uint8_t *)receiveBuffer, 50, false)) {
+        pos += getDataFromBuffer(EDGameVariables.LocalAllegiance, receiveBuffer, 20, '\t');
+        getDataFromBuffer(EDGameVariables.SystemSecurity, receiveBuffer+pos, 20, '\0');
     }
     return false;
 }
@@ -226,9 +245,12 @@ uint8_t EDIpcProtocolMaster::retrieveChanges(bool forceAll)
         // }
         if (forceAll || (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_LOCATION))
         {
-            WebSerial.printf("Location data changes. Old : %s / %s\n", EDGameVariables.LocationSystemName, EDGameVariables.LocationStationName);
             result &= _getLocationData();
-            WebSerial.printf("New : %s / %s\n", EDGameVariables.LocationSystemName, EDGameVariables.LocationStationName);
+            WebSerial.printf("Location data changes : New : %s / %s\n", EDGameVariables.LocationSystemName, EDGameVariables.LocationStationName);
+            result &= _getNavRouteData();
+            WebSerial.printf("Navroute data changes. %s, %s, %s\n", EDGameVariables.Navroute1, EDGameVariables.Navroute2, EDGameVariables.Navroute3);
+            result &= _getSystemPolicyData();
+            WebSerial.printf("System policy data changes. %s, %s\n", EDGameVariables.LocalAllegiance, EDGameVariables.SystemSecurity);
         }
 
         if (forceAll || (updateFlags & (uint8_t)UPDATE_CATEGORY::UC_INFOS))
