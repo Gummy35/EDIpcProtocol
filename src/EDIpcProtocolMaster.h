@@ -31,6 +31,8 @@ protected:
     bool _getKeypadConfig();
     bool _getWifiCredentials();
     bool _getLocationData();
+    bool _getNavRouteData();
+    bool _getSystemPolicyData();
     bool _getGameInfosData();
 
     unsigned long _lastUpdate = 0;
