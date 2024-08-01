@@ -150,8 +150,8 @@ void EDIpcProtocolSlave::_addKeyEventToQueue(KeyEvent *keyEvent)
 
 void EDIpcProtocolSlave::_handleRequest()
 {
-    size_t l;
-    char buffer[100];
+//    size_t l;
+//    char buffer[100];
 
     if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_UPDATES) {
         Wire.write(_updateFlag);
