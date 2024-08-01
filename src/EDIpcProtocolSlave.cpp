@@ -167,6 +167,8 @@ void EDIpcProtocolSlave::_handleRequest()
         Wire.print('\t');
         Wire.print(EDGameVariables.LocalAllegiance);
         Wire.print('\t');
+        Wire.print(EDGameVariables.SystemSecurity);
+        Wire.print('\t');
         Wire.print(EDGameVariables.Navroute1);
         Wire.print('\t');
         Wire.print(EDGameVariables.Navroute2);

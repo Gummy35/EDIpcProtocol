@@ -60,6 +60,7 @@ public:
     char LocationSystemName[21];
     char LocationStationName[21];
     char LocalAllegiance[21];
+    char SystemSecurity[21];
     char Navroute1[21];
     char Navroute2[21];
     char Navroute3[21];
