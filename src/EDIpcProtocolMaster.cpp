@@ -10,9 +10,9 @@ uint8_t _keyQueueStorage[KEY_EVENT_QUEUE_SIZE * sizeof(KeyEvent)];
 //QueueHandle_t _keyQueueHandle = xQueueCreateStatic(KEY_EVENT_QUEUE_SIZE, sizeof(KeyEvent), &(_keyQueueStorage[0]), &_keyQueueBuffer);;
 QueueHandle_t _keyQueueHandle;// = xQueueCreate(KEY_EVENT_QUEUE_SIZE, sizeof(KeyEvent*));
 
-EDIpcProtocolMaster::EDIpcProtocolMaster(I2CDevice *comMcu)
+EDIpcProtocolMaster::EDIpcProtocolMaster(I2CDevice *slaveDevice)
 {
-    this->comMcu = comMcu;
+    this->slaveDevice = slaveDevice;
     instance = this;
     _hasAxisChanges = false;
 }
@@ -104,14 +104,14 @@ bool EDIpcProtocolMaster::_sendAxisData()
 {
     const size_t axisStructSize = sizeof(AxisStruct);
     uint8_t *dataPtr = reinterpret_cast<uint8_t*>(&_axis);
-    comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::CRT_SEND_TRACKER_DATA, dataPtr, axisStructSize);
+    slaveDevice->sendMessageData((uint8_t)COM_REQUEST_TYPE::CRT_SEND_TRACKER_DATA, dataPtr, axisStructSize);
     return false;
 }
 
 bool EDIpcProtocolMaster::_sendKeyData(KeyEvent* keyEvent)
 {
     const size_t keyStructSize = sizeof(KeyEvent);
-    return comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::CRT_SEND_KEY_DATA, (uint8_t*)keyEvent, keyStructSize);
+    return slaveDevice->sendMessageData((uint8_t)COM_REQUEST_TYPE::CRT_SEND_KEY_DATA, (uint8_t*)keyEvent, keyStructSize);
 }
 
 uint8_t getDataFromBuffer(char* dst, char* src, uint8_t maxl, char separator)
@@ -134,7 +134,7 @@ bool EDIpcProtocolMaster::_getGameStatus()
 {
     char receiveBuffer[50];    
     uint8_t pos = 0;   
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_STATUS, (uint8_t *)receiveBuffer, 50, false)) {
+    if (slaveDevice->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_STATUS, (uint8_t *)receiveBuffer, 50, false)) {
         memcpy(&(EDGameVariables.StatusFlags1), receiveBuffer, 4);
         WebSerial.println(EDGameVariables.StatusFlags1);
         memcpy(&(EDGameVariables.StatusFlags2), receiveBuffer+4, 4);
@@ -162,7 +162,7 @@ bool EDIpcProtocolMaster::_getLocationData()
     char receiveBuffer[50];    
     uint8_t pos = 0;
     
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_LOCATION, (uint8_t *)receiveBuffer, 50, false)) {
+    if (slaveDevice->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_LOCATION, (uint8_t *)receiveBuffer, 50, false)) {
         pos = getDataFromBuffer(EDGameVariables.LocationSystemName, receiveBuffer, 20, '\t');
         getDataFromBuffer(EDGameVariables.LocationStationName, receiveBuffer+pos, 20, '\0');
     }
@@ -174,7 +174,7 @@ bool EDIpcProtocolMaster::_getNavRouteData()
     char receiveBuffer[80];    
     uint8_t pos = 0;
     
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_NAVROUTE, (uint8_t *)receiveBuffer, 80, false)) {
+    if (slaveDevice->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_NAVROUTE, (uint8_t *)receiveBuffer, 80, false)) {
         pos += getDataFromBuffer(EDGameVariables.Navroute1, receiveBuffer, 20, '\t');
         pos += getDataFromBuffer(EDGameVariables.Navroute2, receiveBuffer+pos, 20, '\t');
         getDataFromBuffer(EDGameVariables.Navroute3, receiveBuffer+pos, 20, '\0');
@@ -187,7 +187,7 @@ bool EDIpcProtocolMaster::_getSystemPolicyData()
     char receiveBuffer[50];    
     uint8_t pos = 0;
     
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_SYSTEM_POLICY, (uint8_t *)receiveBuffer, 50, false)) {
+    if (slaveDevice->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_SYSTEM_POLICY, (uint8_t *)receiveBuffer, 50, false)) {
         pos += getDataFromBuffer(EDGameVariables.LocalAllegiance, receiveBuffer, 20, '\t');
         getDataFromBuffer(EDGameVariables.SystemSecurity, receiveBuffer+pos, 20, '\0');
     }
@@ -199,7 +199,7 @@ bool EDIpcProtocolMaster::_getGameInfosData()
     char receiveBuffer[50];    
     uint8_t pos = 0;
     
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_INFOS, (uint8_t *)receiveBuffer, 50, false)) {
+    if (slaveDevice->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_INFOS, (uint8_t *)receiveBuffer, 50, false)) {
         pos = getDataFromBuffer(EDGameVariables.InfosCommanderName, receiveBuffer, 20, '\t');
         getDataFromBuffer(EDGameVariables.InfosShipName, receiveBuffer+pos, 20, '\0');       
     }
@@ -228,7 +228,7 @@ uint8_t EDIpcProtocolMaster::retrieveChanges(bool forceAll)
     uint8_t *dataPtr = reinterpret_cast<uint8_t*>(&_lastUpdate);
     uint8_t *receiveBuffer = reinterpret_cast<uint8_t *>(&updateFlags);
     //if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_UPDATES, receiveBuffer, 1, true, dataPtr, sizeof(unsigned long)))
-    if (forceAll || comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_UPDATES, receiveBuffer, 1, true))
+    if (forceAll || slaveDevice->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_UPDATES, receiveBuffer, 1, true))
     {
         // WebSerial.print("Get update flag : ");
         // WebSerial.println(receiveBuffer[0], 2);
@@ -281,7 +281,7 @@ bool EDIpcProtocolMaster::pingSlave()
 {    
     bool res = false;
     char pong[10];
-    if (comMcu->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_PING_SLAVE, (uint8_t *)pong, 9))
+    if (slaveDevice->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_PING_SLAVE, (uint8_t *)pong, 9))
     {
         WebSerial.println(pong);
         res = true;
@@ -291,7 +291,7 @@ bool EDIpcProtocolMaster::pingSlave()
 
 bool EDIpcProtocolMaster::resetSlave()
 {
-    return comMcu->sendMessageData((uint8_t)COM_REQUEST_TYPE::CRT_SEND_REBOOT);
+    return slaveDevice->sendMessageData((uint8_t)COM_REQUEST_TYPE::CRT_SEND_REBOOT);
 }
 
 #endif

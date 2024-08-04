@@ -2,6 +2,12 @@
 #ifdef ESP32
 #include <IAbstractDevice.h>
 
+#define CHUNKID_IGNORE 255
+#define I2C_MAX_PACKET_SIZE 32
+#define I2C_CHUNK_SIZE (I2C_MAX_PACKET_SIZE-3)
+#define I2C_MAX_TRIES 10
+
+
 class I2CDevice: public IAbstractDevice
 {
 public:
@@ -14,10 +20,13 @@ public:
     uint8_t endTransmission();
     uint8_t endTransmission(bool sendStop);
 
-    bool sendMessageData(uint8_t messageId, uint8_t* messageData = nullptr, size_t dataSize = 0);
-    bool getData(uint8_t messageId, uint8_t* receiveBuffer = nullptr, size_t receiveBufferSize = 0, bool strictSize = false, uint8_t* messageData = nullptr, size_t dataSize = 0);
+    virtual bool sendMessageData(uint8_t messageId, uint8_t* messageData = nullptr, size_t dataSize = 0, uint8_t chunkId = CHUNKID_IGNORE);
+    virtual uint8_t requestData(uint8_t *receiveBuffer, size_t receiveBufferSize, bool strictSize = false);
+    virtual bool getData(uint8_t messageId, uint8_t *receiveBuffer = nullptr, size_t receiveBufferSize = 0, bool strictSize = false, uint8_t *messageData = nullptr, size_t dataSize = 0);
 
-	uint8_t ProbeStartAddr;
+    bool getLargeData(uint8_t messageId, uint8_t *receiveBuffer = nullptr, size_t receiveBufferSize = 0, bool strictSize = false, uint8_t *messageData = nullptr, size_t dataSize = 0);
+
+    uint8_t ProbeStartAddr;
 	uint8_t ProbeEndAddr;
 
 	uint8_t Addr;

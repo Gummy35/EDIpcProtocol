@@ -10,7 +10,7 @@ class EDIpcProtocolMaster {
 public:
     static EDIpcProtocolMaster* instance;
 
-    EDIpcProtocolMaster(I2CDevice* comMcu);
+    EDIpcProtocolMaster(I2CDevice* slaveDevice);
     bool begin();
     void setAxis(int32_t x, int32_t y, int32_t z, int32_t rx, int32_t ry, int32_t rz);
     void sendChanges();
@@ -21,7 +21,7 @@ public:
     bool sendKey(KeyEvent event);
 
 protected:
-    I2CDevice* comMcu;
+    I2CDevice* slaveDevice;
     AxisStruct _axis;
     bool _hasAxisChanges;    
     bool _sendAxisData();
