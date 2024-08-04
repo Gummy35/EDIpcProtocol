@@ -164,11 +164,17 @@ void EDIpcProtocolSlave::_handleRequest()
         Wire.print(EDGameVariables.LocationSystemName);
         Wire.print('\t');
         Wire.print(EDGameVariables.LocationStationName);
-        Wire.print('\t');
+        Wire.write(0);
+        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
+        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
+    } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_SYSTEM_POLICY) {
         Wire.print(EDGameVariables.LocalAllegiance);
         Wire.print('\t');
         Wire.print(EDGameVariables.SystemSecurity);
-        Wire.print('\t');
+        Wire.write(0);
+        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
+        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;        
+    } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_NAVROUTE) {
         Wire.print(EDGameVariables.Navroute1);
         Wire.print('\t');
         Wire.print(EDGameVariables.Navroute2);
@@ -176,7 +182,7 @@ void EDIpcProtocolSlave::_handleRequest()
         Wire.print(EDGameVariables.Navroute3);
         Wire.write(0);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
-        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
+        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;        
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_INFOS) {
         Wire.print(EDGameVariables.InfosCommanderName);
         Wire.print('\t');
@@ -231,6 +237,14 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
     else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_STATUS)
     {
         // Serial.println("L\tLocation request from master");
+    }
+    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LONGDATA)
+    {
+        // We've got packet data
+        if (numBytes == 3)
+        {
+            
+        }
     }
     else if (_currentRequestType == COM_REQUEST_TYPE::CRT_SEND_REBOOT)
     {
