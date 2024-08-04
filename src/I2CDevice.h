@@ -4,6 +4,7 @@
 #define I2C_MAX_PACKET_SIZE 32
 #define I2C_CHUNK_SIZE (I2C_MAX_PACKET_SIZE-3)
 #define I2C_MAX_TRIES 10
+#define I2C_MAX_MESSAGE_SIZE 128
 
 #ifdef ESP32
 #include <IAbstractDevice.h>

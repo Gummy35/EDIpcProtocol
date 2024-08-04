@@ -1,7 +1,9 @@
 #ifndef ESP32
 
+#include <I2CDevice.h>
 #include "EDIpcProtocolSlave.h"
 #include <EDGameVariables.h>
+#include <CRC8.h>
 
 #define KEY_EVENT_QUEUE_SIZE 10
 
@@ -148,6 +150,75 @@ void EDIpcProtocolSlave::_addKeyEventToQueue(KeyEvent *keyEvent)
     interrupts();
 }
 
+
+void EDIpcProtocolSlave::_resetTxBuffer()
+{
+    responseSize = 0;
+    memset(responseBuffer, 0, I2C_MAX_MESSAGE_SIZE);
+    memset(crcs, 0, 8);
+    chunkId = 0;
+    chunkCount = 0;
+}
+
+void EDIpcProtocolSlave::_writeTxBuffer(const char * data)
+{
+    uint8_t l = strlen(data);
+    memcpy((void *)(responseBuffer+responseSize), data, l);
+    responseSize += l;
+}
+
+void EDIpcProtocolSlave::_writeTxBuffer(uint8_t * data, uint8_t dataSize)
+{
+    memcpy((void *)(responseBuffer+responseSize), data, dataSize);
+    responseSize += dataSize;
+}
+
+void EDIpcProtocolSlave::_sendChunk(uint8_t chunkId)
+{
+    if (chunkId == 0) {
+        Serial.println("Received request, preparing response");
+        responseBuffer[responseSize++] = 0;
+        chunkCount = (responseSize + (I2C_CHUNK_SIZE-1)) / I2C_CHUNK_SIZE;
+        //Serial.printf("Response : %s, size %d, chunkcount %d\n", responseBuffer, responseSize, chunkcount);
+        sendcrc.restart();
+        sendcrc.setInitial(CRC8_INITIAL);
+        uint8_t crcChunkId = 0;
+        // calc crc for each chunk
+        for (uint8_t i = 0; i < responseSize; i++)
+        {
+            sendcrc.add(responseBuffer[i]);
+            if ((((i + 1) % I2C_CHUNK_SIZE) == 0) || (i == (responseSize - 1)))
+            {
+                crcs[crcChunkId] = sendcrc.calc();
+                sendcrc.restart();
+                sendcrc.setInitial(crcs[crcChunkId]);
+                //Serial.printf("byte %d, crc#%d = %d\n", i, crcChunkId, crcs[crcChunkId]);
+                crcChunkId++;
+            }                        
+        }
+    }
+
+    if (chunkId >= chunkCount) return;
+
+    // 0 signature
+    Wire.write((uint8_t) 255);
+    // 1 chunkCount / chunkId
+    if (chunkId == 0)
+        Wire.write((uint8_t) chunkCount);
+    else
+        Wire.write((uint8_t) chunkId);
+    // 2 chunk's crc
+    Wire.write((uint8_t) crcs[chunkId]);
+
+    // 3.. chunk data
+    uint8_t chunkSize = (chunkId < (chunkCount - 1)) ? I2C_CHUNK_SIZE :  responseSize % I2C_CHUNK_SIZE;
+    Wire.write((uint8_t *)(responseBuffer + (chunkId * I2C_CHUNK_SIZE)), chunkSize);
+    //memcpy(receiveBuffer + 3, (void *)(responseBuffer + (mockChunkId * I2C_CHUNK_SIZE)), chunkSize);
+    //Serial.printf("Sending [0]=%d, [1]=%d, [2]=%d, size=%d, data=%s\n", receiveBuffer[0], receiveBuffer[1], receiveBuffer[2], chunkSize, receiveBuffer+3);
+    //return chunkSize + 3;
+}
+
+
 void EDIpcProtocolSlave::_handleRequest()
 {
 //    size_t l;
@@ -197,10 +268,23 @@ void EDIpcProtocolSlave::_handleRequest()
         Wire.write(0);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_STATUS)));
         _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
+    } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_MOCK) {
+        if (chunkId == 0) {
+            _resetTxBuffer();
+            _writeTxBuffer("LocationSystemName\t");
+            _writeTxBuffer("LocationStationName\t");
+            _writeTxBuffer("LocalAllegiance\t");
+            _writeTxBuffer("SystemSecurity\t");
+            _writeTxBuffer("Navroute1\t");
+            _writeTxBuffer("Navroute2\t");
+            _writeTxBuffer("Navroute3");
+        }
+        _sendChunk(chunkId);
     }
 }
 
 void(* resetFunc) (void) = 0;
+
 
 void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
 {
@@ -222,33 +306,33 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
         bytesRead = _wire->readBytes((uint8_t *)keyEvent, sizeof(KeyEvent));
         _addKeyEventToQueue(keyEvent);
     } 
-    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_PING_SLAVE)
-    {
-        //Serial.println("L\tPing from master");
-    }
-    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOCATION)
-    {
-        // Serial.println("L\tLocation request from master");
-    }
-    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_INFOS)
-    {
-        // Serial.println("L\tLocation request from master");
-    }
-    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_STATUS)
-    {
-        // Serial.println("L\tLocation request from master");
-    }
-    else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LONGDATA)
-    {
-        // We've got packet data
-        if (numBytes == 3)
-        {
-            
-        }
-    }
     else if (_currentRequestType == COM_REQUEST_TYPE::CRT_SEND_REBOOT)
     {
         resetFunc();
+    }
+    else {
+        if (numBytes > 1 )
+            chunkId = _wire->read();
+
+        if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_PING_SLAVE)
+        {
+            //Serial.println("L\tPing from master");
+        }
+        else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOCATION)
+        {
+            // Serial.println("L\tLocation request from master");
+        }
+        else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_INFOS)
+        {
+            // Serial.println("L\tLocation request from master");
+        }
+        else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_STATUS)
+        {
+            // Serial.println("L\tLocation request from master");
+        }
+        else if (_currentRequestType == COM_REQUEST_TYPE::CRT_MOCK)
+        {
+        }
     }
 }
 
