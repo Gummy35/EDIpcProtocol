@@ -3,6 +3,13 @@
 #include "CrcParameters.h"
 #include "CRC8.h"
 
+#define DEBUG_COM
+
+#ifdef DEBUG_COM
+#define debug(MyCode) MyCode;
+#else
+#endif
+
 CRC8 crc;
 
 I2CDevice::I2CDevice(uint8_t startAddress, uint8_t endAddress, const char *name, uint8_t interruptPin)
@@ -159,28 +166,28 @@ uint8_t I2CDevice::requestData(uint8_t *receiveBuffer, size_t receiveBufferSize,
     return cnt;
 }
 
-bool I2CDevice::getData(uint8_t messageId, uint8_t *receiveBuffer, size_t receiveBufferSize, bool strictSize, uint8_t *messageData, size_t dataSize)
-{
-    //    Serial.printf("sending %i", messageId);
-    if (!sendMessageData(messageId, messageData, dataSize))
-        return false;
-    //    Serial.printf("Requesting %i bytes from %x\n", messageId, Addr);
-    return requestData(receiveBuffer, receiveBufferSize, strictSize) > 0;
-}
+// uint8_t I2CDevice::getData(uint8_t messageId, uint8_t *receiveBuffer, size_t receiveBufferSize, bool strictSize, uint8_t *messageData, size_t dataSize)
+// {
+//     //    Serial.printf("sending %i", messageId);
+//     if (!sendMessageData(messageId, messageData, dataSize))
+//         return false;
+//     //    Serial.printf("Requesting %i bytes from %x\n", messageId, Addr);
+//     return requestData(receiveBuffer, receiveBufferSize, strictSize);
+// }
 
 bool checkCRC(uint8_t initial, uint8_t expected, uint8_t* data, uint8_t size)
 {
-    crc.restart();
+    crc.reset();
     crc.setInitial(initial);
     crc.add(data, size);
     uint8_t r = crc.calc();
-    Serial.printf("Checking crc : Initial=%d, expected=%d, size=%d, result=%d, data=%s\n", initial, expected, size, r, data);
+    debug(Serial.printf("Checking crc : Initial=%d, expected=%d, size=%d, result=%d, data=%s\n", initial, expected, size, r, data))
     return expected == r;
 }
 
 uint8_t chunkBuffer[I2C_MAX_PACKET_SIZE];
 
-bool I2CDevice::getLargeData(uint8_t messageId, uint8_t *receiveBuffer, size_t receiveBufferSize, bool strictSize, uint8_t *messageData, size_t dataSize)
+uint8_t I2CDevice::getData(uint8_t messageId, uint8_t *receiveBuffer, size_t receiveBufferSize, bool strictSize, uint8_t *messageData, size_t dataSize)
 {
     uint8_t chunkCount = 0;
     uint8_t chunkId = 0;
@@ -190,49 +197,69 @@ bool I2CDevice::getLargeData(uint8_t messageId, uint8_t *receiveBuffer, size_t r
     uint8_t end;
     uint8_t receivedSize;
     uint8_t tries = 0;
+    uint8_t expectedSize = 0;
+    uint8_t receivedDataSize = 0;
+    bool hasSignature = false;
     memset(receiveBuffer, 0, receiveBufferSize);
 
     do
     {
-        Serial.printf("Requesting messageId %d, chunkId %d\n", messageId, chunkId);
+        debug(Serial.printf("Requesting messageId %d, chunkId %d\n", messageId, chunkId))
         if (!sendMessageData(messageId, messageData, dataSize, chunkId))
-            return false;
-        Serial.println("Request accepted");
-        size = ((receiveBufferSize - index) + 3) % I2C_MAX_PACKET_SIZE;
-        if (size == 0) size = I2C_MAX_PACKET_SIZE;
+            return 0;
+        debug(Serial.println("Request accepted"))
+        //size = ((receiveBufferSize - index) + 3) % I2C_MAX_PACKET_SIZE;        
+        // if (size == 0) size = I2C_MAX_PACKET_SIZE;
+        size = I2C_MAX_PACKET_SIZE;
 
-        Serial.printf("Requesting %d bytes at index %d\n", size, index);
+        debug(Serial.printf("Requesting %d bytes at index %d\n", size, index))
         memset(chunkBuffer, 0, I2C_MAX_PACKET_SIZE);
         receivedSize = requestData(chunkBuffer, size);
-        Serial.printf("Received %d bytes\n", receivedSize);
+        debug(Serial.printf("Received %d bytes\n", receivedSize))
         if (receivedSize > 0)
         {
-            if ((chunkBuffer[0] == 255) && checkCRC(lastCrc, chunkBuffer[2], chunkBuffer+3, receivedSize-3))
-            {
-                Serial.printf("Signature matched, crc matched, chunkdata = %d, crc = %d\n", chunkBuffer[1], chunkBuffer[2]);
+            hasSignature = chunkBuffer[0] == 255;
 
-                if (chunkId == 0)
-                    chunkCount = chunkBuffer[1];
-                else
-                    chunkId = chunkBuffer[1];
+            if (chunkId == 0)
+            {
+                // first block and doesn't have signature ? this is not a chunked data. Unsafe, for specific use only
+                if (!hasSignature) {
+                    debug(Serial.println("No signature, single frame data"))
+                    memcpy(receiveBuffer, chunkBuffer, receiveBufferSize);
+                    return receiveBufferSize;w
+                }
+
+                //chunkCount = chunkBuffer[1];
+                expectedSize = chunkBuffer[1];
+                chunkCount = (expectedSize + (I2C_CHUNK_SIZE-1)) / I2C_CHUNK_SIZE;
+            }
+            else
+                chunkId = chunkBuffer[1];
+
+            receivedDataSize = expectedSize - index;
+            if (receivedDataSize > I2C_CHUNK_SIZE) receivedDataSize = I2C_CHUNK_SIZE;
+
+            if (hasSignature && checkCRC(lastCrc, chunkBuffer[2], chunkBuffer+3, receivedDataSize)) //receivedSize-3))
+            {
+                debug(Serial.printf("Signature matched, crc matched, chunkdata = %d, crc = %d\n", chunkBuffer[1], chunkBuffer[2]))
 
                 lastCrc = chunkBuffer[2];
 
                 if (chunkId < chunkCount)
                     chunkId++;
 
-                memcpy(receiveBuffer+index, chunkBuffer + 3, receivedSize - 3);
+                memcpy(receiveBuffer+index, chunkBuffer + 3, receivedDataSize);//receivedSize - 3);
 
-                index += receivedSize - 3;
+                index += receivedDataSize; // receivedSize - 3;
 
                 delay(5);
             }
             else
             {
                 if (receiveBuffer[index] == 255)
-                    Serial.printf("Ouch, crc failed :(\n");
+                    debug(Serial.printf("Ouch, crc failed :(\n"))
                 else
-                    Serial.printf("Ouch, signature failed :(\n");
+                    debug(Serial.printf("Ouch, signature failed :(\n"))
 
                 // response format incorrect, or crc check fail, delay and restart
                 delay(10);
@@ -241,23 +268,21 @@ bool I2CDevice::getLargeData(uint8_t messageId, uint8_t *receiveBuffer, size_t r
 
                 memset(receiveBuffer, 0, receiveBufferSize);
                 if (tries++ >= I2C_MAX_TRIES)
-                    return false;
+                    return 0;
             }
         }
         else
         {
-            Serial.printf("Ouch, request failed, error code %d, retrying\n", LastError);
+            debug(Serial.printf("Ouch, request failed, error code %d, retrying\n", LastError))
             delay(10);
             chunkId = 0;
             if (tries++ >= I2C_MAX_TRIES)
-                return false;
+                return 0;
         }
     } while (chunkId < chunkCount);
-    Serial.println("All done !");
-    return true;
+    debug(Serial.println("All done !"))
+    return expectedSize;
 }
-
-
 
 
 #endif
