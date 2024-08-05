@@ -178,9 +178,15 @@ void EDIpcProtocolSlave::_sendChunk(uint8_t chunkId)
     if (chunkId == 0) {
         Serial.println("Received request, preparing response");
         responseBuffer[responseSize++] = 0;
+        Serial.print("response = ");
+        Serial.println((char *)responseBuffer);
+        Serial.print("response size = ");
+        Serial.println(responseSize);
         chunkCount = (responseSize + (I2C_CHUNK_SIZE-1)) / I2C_CHUNK_SIZE;
+        Serial.print("ChunkCount = ");
+        Serial.println(chunkCount);
         //Serial.printf("Response : %s, size %d, chunkcount %d\n", responseBuffer, responseSize, chunkcount);
-        sendcrc.restart();
+        sendcrc.reset();
         sendcrc.setInitial(CRC8_INITIAL);
         uint8_t crcChunkId = 0;
         // calc crc for each chunk
@@ -190,8 +196,10 @@ void EDIpcProtocolSlave::_sendChunk(uint8_t chunkId)
             if ((((i + 1) % I2C_CHUNK_SIZE) == 0) || (i == (responseSize - 1)))
             {
                 crcs[crcChunkId] = sendcrc.calc();
-                sendcrc.restart();
+                sendcrc.reset();
                 sendcrc.setInitial(crcs[crcChunkId]);
+                Serial.print("crc = ");
+                Serial.println(crcs[crcChunkId]);
                 //Serial.printf("byte %d, crc#%d = %d\n", i, crcChunkId, crcs[crcChunkId]);
                 crcChunkId++;
             }                        
@@ -204,7 +212,8 @@ void EDIpcProtocolSlave::_sendChunk(uint8_t chunkId)
     Wire.write((uint8_t) 255);
     // 1 chunkCount / chunkId
     if (chunkId == 0)
-        Wire.write((uint8_t) chunkCount);
+        //Wire.write((uint8_t) chunkCount);
+        Wire.write((uint8_t) responseSize);
     else
         Wire.write((uint8_t) chunkId);
     // 2 chunk's crc
@@ -212,6 +221,9 @@ void EDIpcProtocolSlave::_sendChunk(uint8_t chunkId)
 
     // 3.. chunk data
     uint8_t chunkSize = (chunkId < (chunkCount - 1)) ? I2C_CHUNK_SIZE :  responseSize % I2C_CHUNK_SIZE;
+    Serial.print("Sending ");
+    Serial.println(chunkSize);
+    Serial.println((char *)(responseBuffer + (chunkId * I2C_CHUNK_SIZE)));
     Wire.write((uint8_t *)(responseBuffer + (chunkId * I2C_CHUNK_SIZE)), chunkSize);
     //memcpy(receiveBuffer + 3, (void *)(responseBuffer + (mockChunkId * I2C_CHUNK_SIZE)), chunkSize);
     //Serial.printf("Sending [0]=%d, [1]=%d, [2]=%d, size=%d, data=%s\n", receiveBuffer[0], receiveBuffer[1], receiveBuffer[2], chunkSize, receiveBuffer+3);
@@ -280,6 +292,25 @@ void EDIpcProtocolSlave::_handleRequest()
             _writeTxBuffer("Navroute3");
         }
         _sendChunk(chunkId);
+    // } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_MOCK) {
+    //     if (chunkId == 0) {
+    //         _resetTxBuffer();
+    //         uint8_t d[10];
+    //         for(int i=0;i<10;i++)
+    //             d[i] = i;
+    //         _writeTxBuffer(d, 10);
+    //         _writeTxBuffer(d, 10);
+    //         _writeTxBuffer(d, 10);
+    //         _writeTxBuffer(d, 10);
+    //         _writeTxBuffer(d, 10);
+    //         _writeTxBuffer(d, 10);
+    //         _writeTxBuffer(d, 10);
+    //         _writeTxBuffer(d, 10);
+    //         _writeTxBuffer(d, 10);
+    //         _writeTxBuffer(d, 10);
+    //         _writeTxBuffer("End");
+    //     }
+    //     _sendChunk(chunkId);
     }
 }
 
@@ -312,8 +343,11 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
     }
     else {
         if (numBytes > 1 )
+        {
             chunkId = _wire->read();
-
+            Serial.print("chunkId = ");
+            Serial.println(chunkId);
+        }
         if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_PING_SLAVE)
         {
             //Serial.println("L\tPing from master");
