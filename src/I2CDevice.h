@@ -4,6 +4,7 @@
 #define I2C_MAX_PACKET_SIZE 32
 #define I2C_CHUNK_SIZE (I2C_MAX_PACKET_SIZE-3)
 #define I2C_MAX_TRIES 10
+// 32 bytes pro micro I2C limitation is way too small, but don't oversize buffer. 128 bytes should be enough.
 #define I2C_MAX_MESSAGE_SIZE 128
 
 #ifdef ESP32
@@ -23,9 +24,9 @@ public:
 
     virtual bool sendMessageData(uint8_t messageId, uint8_t* messageData = nullptr, size_t dataSize = 0, uint8_t chunkId = CHUNKID_IGNORE);
     virtual uint8_t requestData(uint8_t *receiveBuffer, size_t receiveBufferSize, bool strictSize = false);
-    virtual bool getData(uint8_t messageId, uint8_t *receiveBuffer = nullptr, size_t receiveBufferSize = 0, bool strictSize = false, uint8_t *messageData = nullptr, size_t dataSize = 0);
+    virtual uint8_t getData(uint8_t messageId, uint8_t *receiveBuffer = nullptr, size_t receiveBufferSize = 0, bool strictSize = false, uint8_t *messageData = nullptr, size_t dataSize = 0);
 
-    bool getLargeData(uint8_t messageId, uint8_t *receiveBuffer = nullptr, size_t receiveBufferSize = 0, bool strictSize = false, uint8_t *messageData = nullptr, size_t dataSize = 0);
+//    uint8_t getLargeData(uint8_t messageId, uint8_t *receiveBuffer = nullptr, size_t receiveBufferSize = 0, bool strictSize = false, uint8_t *messageData = nullptr, size_t dataSize = 0);
 
     uint8_t ProbeStartAddr;
 	uint8_t ProbeEndAddr;
