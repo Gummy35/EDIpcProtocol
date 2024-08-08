@@ -3,11 +3,12 @@
 #include "CrcParameters.h"
 #include "CRC8.h"
 
-#define DEBUG_COM
+// #define DEBUG_COM
 
 #ifdef DEBUG_COM
 #define debug(MyCode) MyCode;
 #else
+#define debug(MyCode) {}
 #endif
 
 CRC8 crc;
@@ -226,7 +227,7 @@ uint8_t I2CDevice::getData(uint8_t messageId, uint8_t *receiveBuffer, size_t rec
                 if (!hasSignature) {
                     debug(Serial.println("No signature, single frame data"))
                     memcpy(receiveBuffer, chunkBuffer, receiveBufferSize);
-                    return receiveBufferSize;w
+                    return receiveBufferSize;
                 }
 
                 //chunkCount = chunkBuffer[1];
