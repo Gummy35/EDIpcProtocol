@@ -96,7 +96,7 @@ void EDIpcProtocolSlave::_processKeyEventQueue()
 {
     while (_keyQueueCount > 0)
     {
-        Serial.println("key loop");
+        // Serial.println("L\tkey loop");
         noInterrupts();
         KeyEvent *item = _keyQueue[_keyQueueHead];
         _keyQueueHead = (_keyQueueHead + 1) % KEY_EVENT_QUEUE_SIZE;
@@ -112,13 +112,16 @@ void EDIpcProtocolSlave::_processKeyEventQueue()
                 if (item->count == 0)
                 {
                     Keyboard.press(item->key);
-                    Serial.print((int)item->key);
+                    // Serial.print((int)item->key);
                 }
                 else
                     for (uint8_t c = 0; c < item->count; c++)
                     {
                         Keyboard.press(item->key);
-                        Serial.print((int)item->key);
+                        delay(50);
+                        // Serial.print("L\t");
+                        // Serial.print((int)item->key);
+                        // Serial.println();
                         Keyboard.release(item->key);
                     }
             }
@@ -134,7 +137,7 @@ void EDIpcProtocolSlave::_processKeyEventQueue()
 void EDIpcProtocolSlave::_addKeyEventToQueue(KeyEvent *keyEvent)
 {
     // Désactive les interruptions pour assurer la sécurité des données
-    Serial.println("new data");
+    // Serial.println("new key add to queue");
     noInterrupts();
     if (_keyQueueCount < KEY_EVENT_QUEUE_SIZE)
     {
@@ -163,12 +166,51 @@ void EDIpcProtocolSlave::_resetTxBuffer()
 void EDIpcProtocolSlave::_writeTxBuffer(const char * data)
 {
     uint8_t l = strlen(data);
+    if (responseSize + l > I2C_MAX_MESSAGE_SIZE)
+    {
+        Serial.println(F("L\tI2C MF Buffer overflow"));
+        return;
+    }
     memcpy((void *)(responseBuffer+responseSize), data, l);
     responseSize += l;
 }
 
+void EDIpcProtocolSlave::_writeTxBuffer(const __FlashStringHelper *ifsh)
+{
+    PGM_P p = reinterpret_cast<PGM_P>(ifsh);
+    size_t n = 0;
+    while (1) {
+        unsigned char c = pgm_read_byte(p++);
+        if (c == 0) break;
+        if (responseSize + n >= I2C_MAX_MESSAGE_SIZE)
+        {
+            Serial.println(F("L\tI2C MF Buffer overflow"));
+            return;
+        }
+        responseBuffer[responseSize+n] = c;
+        n++;
+    }
+    responseSize += n;
+}
+
+
+void EDIpcProtocolSlave::_writeTxBuffer(uint8_t data)
+{
+    if (responseSize + 1 > I2C_MAX_MESSAGE_SIZE)
+    {
+        Serial.println(F("L\tI2C MF Buffer overflow"));
+        return;
+    }
+    responseBuffer[responseSize++] = data;
+}
+
 void EDIpcProtocolSlave::_writeTxBuffer(uint8_t * data, uint8_t dataSize)
 {
+    if (responseSize + dataSize > I2C_MAX_MESSAGE_SIZE)
+    {
+        Serial.println(F("L\tI2C MF Buffer overflow"));
+        return;
+    }
     memcpy((void *)(responseBuffer+responseSize), data, dataSize);
     responseSize += dataSize;
 }
@@ -176,16 +218,15 @@ void EDIpcProtocolSlave::_writeTxBuffer(uint8_t * data, uint8_t dataSize)
 void EDIpcProtocolSlave::_sendChunk(uint8_t chunkId)
 {
     if (chunkId == 0) {
-        Serial.println("Received request, preparing response");
+//        Serial.println(F("Received request, preparing response"));
         responseBuffer[responseSize++] = 0;
-        Serial.print("response = ");
-        Serial.println((char *)responseBuffer);
-        Serial.print("response size = ");
-        Serial.println(responseSize);
+        // Serial.print(F("response = "));
+        // Serial.println((char *)responseBuffer);
+        // Serial.print(F("response size = "));
+        // Serial.println(responseSize);
         chunkCount = (responseSize + (I2C_CHUNK_SIZE-1)) / I2C_CHUNK_SIZE;
-        Serial.print("ChunkCount = ");
-        Serial.println(chunkCount);
-        //Serial.printf("Response : %s, size %d, chunkcount %d\n", responseBuffer, responseSize, chunkcount);
+//        Serial.print(F("ChunkCount = "));
+//        Serial.println(chunkCount);
         sendcrc.reset();
         sendcrc.setInitial(CRC8_INITIAL);
         uint8_t crcChunkId = 0;
@@ -198,9 +239,8 @@ void EDIpcProtocolSlave::_sendChunk(uint8_t chunkId)
                 crcs[crcChunkId] = sendcrc.calc();
                 sendcrc.reset();
                 sendcrc.setInitial(crcs[crcChunkId]);
-                Serial.print("crc = ");
-                Serial.println(crcs[crcChunkId]);
-                //Serial.printf("byte %d, crc#%d = %d\n", i, crcChunkId, crcs[crcChunkId]);
+                // Serial.print("crc = ");
+                // Serial.println(crcs[crcChunkId]);
                 crcChunkId++;
             }                        
         }
@@ -221,96 +261,94 @@ void EDIpcProtocolSlave::_sendChunk(uint8_t chunkId)
 
     // 3.. chunk data
     uint8_t chunkSize = (chunkId < (chunkCount - 1)) ? I2C_CHUNK_SIZE :  responseSize % I2C_CHUNK_SIZE;
-    Serial.print("Sending ");
-    Serial.println(chunkSize);
-    Serial.println((char *)(responseBuffer + (chunkId * I2C_CHUNK_SIZE)));
+    // Serial.print(F("Sending "));
+    // Serial.println(chunkSize);
+    // Serial.println((char *)(responseBuffer + (chunkId * I2C_CHUNK_SIZE)));
     Wire.write((uint8_t *)(responseBuffer + (chunkId * I2C_CHUNK_SIZE)), chunkSize);
-    //memcpy(receiveBuffer + 3, (void *)(responseBuffer + (mockChunkId * I2C_CHUNK_SIZE)), chunkSize);
-    //Serial.printf("Sending [0]=%d, [1]=%d, [2]=%d, size=%d, data=%s\n", receiveBuffer[0], receiveBuffer[1], receiveBuffer[2], chunkSize, receiveBuffer+3);
-    //return chunkSize + 3;
 }
 
 
 void EDIpcProtocolSlave::_handleRequest()
 {
-//    size_t l;
-//    char buffer[100];
-
     if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_UPDATES) {
-        Wire.write(_updateFlag);
-        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
+        if (chunkId == 0) {
+            _resetTxBuffer();
+            _writeTxBuffer(_updateFlag);
+        }
+        _sendChunk(chunkId);
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_PING_SLAVE) {
-        Wire.print(F("Pong"));
-        Wire.write(0);
-        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
+        if (chunkId == 0) {
+            _resetTxBuffer();
+            _writeTxBuffer(F("Pong"));
+        }
+        _sendChunk(chunkId);
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOCATION) {
-        Wire.print(EDGameVariables.LocationSystemName);
-        Wire.print('\t');
-        Wire.print(EDGameVariables.LocationStationName);
-        Wire.write(0);
+        if (chunkId == 0) {
+            _resetTxBuffer();
+            _writeTxBuffer(EDGameVariables.LocationSystemName);
+            _writeTxBuffer("\t");
+            _writeTxBuffer(EDGameVariables.LocationStationName);
+        }
+        _sendChunk(chunkId);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
-        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_SYSTEM_POLICY) {
-        Wire.print(EDGameVariables.LocalAllegiance);
-        Wire.print('\t');
-        Wire.print(EDGameVariables.SystemSecurity);
-        Wire.write(0);
+        if (chunkId == 0) {
+            _resetTxBuffer();
+            _writeTxBuffer(EDGameVariables.LocalAllegiance);
+            _writeTxBuffer("\t");
+            _writeTxBuffer(EDGameVariables.SystemSecurity);
+        }
+        _sendChunk(chunkId);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
-        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;        
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_NAVROUTE) {
-        Wire.print(EDGameVariables.Navroute1);
-        Wire.print('\t');
-        Wire.print(EDGameVariables.Navroute2);
-        Wire.print('\t');
-        Wire.print(EDGameVariables.Navroute3);
-        Wire.write(0);
+        if (chunkId == 0) {
+            _resetTxBuffer();
+            _writeTxBuffer(EDGameVariables.Navroute1);
+            _writeTxBuffer("\t");
+            _writeTxBuffer(EDGameVariables.Navroute2);
+            _writeTxBuffer("\t");
+            _writeTxBuffer(EDGameVariables.Navroute3);
+        }
+        _sendChunk(chunkId);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
-        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;        
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_INFOS) {
-        Wire.print(EDGameVariables.InfosCommanderName);
-        Wire.print('\t');
-        Wire.print(EDGameVariables.InfosShipName);
-        Wire.write(0);
+        if (chunkId == 0) {
+            _resetTxBuffer();
+            _writeTxBuffer(EDGameVariables.InfosCommanderName);
+            _writeTxBuffer("\t");
+            _writeTxBuffer(EDGameVariables.InfosShipName);
+        }
+        _sendChunk(chunkId);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_INFOS)));
-        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_STATUS) {
-        Wire.write((uint8_t *)(&EDGameVariables.StatusFlags1), 4);
-        Wire.write((uint8_t *)(&EDGameVariables.StatusFlags2), 4);        
-        Wire.print(EDGameVariables.StatusLegal);
-        Wire.write(0);
+        if (chunkId == 0) {
+            _resetTxBuffer();
+            _writeTxBuffer((uint8_t *)(&EDGameVariables.StatusFlags1), 4);
+            _writeTxBuffer((uint8_t *)(&EDGameVariables.StatusFlags2), 4);
+            _writeTxBuffer(EDGameVariables.StatusLegal);
+        }
+        _sendChunk(chunkId);
         _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_STATUS)));
-        _currentRequestType = COM_REQUEST_TYPE::CRT_NONE;
+    } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOADOUT) {
+        if (chunkId == 0) {
+            _resetTxBuffer();
+            _writeTxBuffer((uint8_t *)(&EDGameVariables.LoadoutFlags1), 4);
+            _writeTxBuffer((uint8_t *)(&EDGameVariables.LoadoutFlags2), 4);
+        }
+        _sendChunk(chunkId);
+        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_STATUS)));
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_MOCK) {
         if (chunkId == 0) {
             _resetTxBuffer();
-            _writeTxBuffer("LocationSystemName\t");
-            _writeTxBuffer("LocationStationName\t");
-            _writeTxBuffer("LocalAllegiance\t");
-            _writeTxBuffer("SystemSecurity\t");
-            _writeTxBuffer("Navroute1\t");
-            _writeTxBuffer("Navroute2\t");
-            _writeTxBuffer("Navroute3");
+            _writeTxBuffer(F("LocationSystemName\t"));
+            _writeTxBuffer(F("LocationStationName\t"));
+            _writeTxBuffer(F("LocalAllegiance\t"));
+            _writeTxBuffer(F("SystemSecurity\t"));
+            _writeTxBuffer(F("Navroute1\t"));
+            _writeTxBuffer(F("Navroute2\t"));
+            _writeTxBuffer(F("Navroute3"));
         }
         _sendChunk(chunkId);
-    // } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_MOCK) {
-    //     if (chunkId == 0) {
-    //         _resetTxBuffer();
-    //         uint8_t d[10];
-    //         for(int i=0;i<10;i++)
-    //             d[i] = i;
-    //         _writeTxBuffer(d, 10);
-    //         _writeTxBuffer(d, 10);
-    //         _writeTxBuffer(d, 10);
-    //         _writeTxBuffer(d, 10);
-    //         _writeTxBuffer(d, 10);
-    //         _writeTxBuffer(d, 10);
-    //         _writeTxBuffer(d, 10);
-    //         _writeTxBuffer(d, 10);
-    //         _writeTxBuffer(d, 10);
-    //         _writeTxBuffer(d, 10);
-    //         _writeTxBuffer("End");
-    //     }
-    //     _sendChunk(chunkId);
     }
 }
 
@@ -325,7 +363,6 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
     _currentRequestType = static_cast<COM_REQUEST_TYPE>((uint8_t)requestVal);
     if (_currentRequestType == COM_REQUEST_TYPE::CRT_SEND_TRACKER_DATA)
     {
-        Serial.println("tracker");
         const size_t axisStructSize = sizeof(AxisStruct);
         dataPtr = reinterpret_cast<uint8_t *>(&_axis);
         bytesRead = _wire->readBytes(dataPtr, axisStructSize);
@@ -345,8 +382,6 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
         if (numBytes > 1 )
         {
             chunkId = _wire->read();
-            Serial.print("chunkId = ");
-            Serial.println(chunkId);
         }
         if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_PING_SLAVE)
         {
@@ -361,6 +396,10 @@ void EDIpcProtocolSlave::_handleReceivedData(int numBytes)
             // Serial.println("L\tLocation request from master");
         }
         else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_STATUS)
+        {
+            // Serial.println("L\tLocation request from master");
+        }
+        else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOADOUT)
         {
             // Serial.println("L\tLocation request from master");
         }
