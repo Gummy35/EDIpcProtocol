@@ -42,6 +42,8 @@ protected:
     void _addKeyEventToQueue(KeyEvent* keyEvent);
     void _resetTxBuffer();
     void _writeTxBuffer(const char *data);
+    void _writeTxBuffer(const __FlashStringHelper *ifsh);
+    void _writeTxBuffer(uint8_t data);
     void _writeTxBuffer(uint8_t *data, uint8_t dataSize);
     void _sendChunk(uint8_t chunkId);
     void _processKeyEventQueue();

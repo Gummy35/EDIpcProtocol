@@ -57,6 +57,17 @@ public:
     bool IsOnFootExterior();
     bool IsBreathableAtmosphere();
 
+    bool IsChaffLauncherEnabled();
+    bool IsHeatsinkLauncherEnabled();
+    bool IsShieldCellbankEnabled();
+    bool IsEcmEnabled();
+    bool IsHyperdriveEnabled();
+    bool IsEngineEnabled();
+    bool IsLifeSupportEnabled();
+    bool IsPowerDistributorEnabled();
+    bool IsSensorsEnabled();
+    bool IsShieldGeneratorEnabled();    
+
     char LocationSystemName[21];
     char LocationStationName[21];
     char LocalAllegiance[21];
@@ -67,8 +78,14 @@ public:
     char InfosCommanderName[21];
     char InfosShipName[21];
     char StatusLegal[21];
+    char AlertMessage1[21];
+    char AlertMessage2[21];
+    char AlertMessage3[21];
+
     uint32_t StatusFlags1;
     uint32_t StatusFlags2;
+    uint32_t LoadoutFlags1 = 0xFFFFFFFF;
+    uint32_t LoadoutFlags2 = 0xFFFFFFFF;
 };
 
 extern EDGameVariablesClass EDGameVariables;

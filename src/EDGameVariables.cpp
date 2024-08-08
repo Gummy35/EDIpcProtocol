@@ -260,4 +260,54 @@ bool EDGameVariablesClass::IsBreathableAtmosphere()
     return (StatusFlags2 & 0x00010000) == 0x00010000;
 }
 
+bool EDGameVariablesClass::IsChaffLauncherEnabled()
+{
+    return (LoadoutFlags1 & 0x0000000F) > 0;
+}
+
+bool EDGameVariablesClass::IsHeatsinkLauncherEnabled()
+{
+    return (LoadoutFlags1 & 0x000000F0) > 0;
+}
+
+bool EDGameVariablesClass::IsShieldCellbankEnabled()
+{
+    return (LoadoutFlags1 & 0x00000F00) > 0;
+}
+
+bool EDGameVariablesClass::IsEcmEnabled()
+{
+    return (LoadoutFlags1 & 0x0000F000) > 0;
+}
+
+bool EDGameVariablesClass::IsHyperdriveEnabled()
+{
+    return (LoadoutFlags2 & 0x0000000F) > 0;
+}
+
+bool EDGameVariablesClass::IsEngineEnabled()
+{
+    return (LoadoutFlags2 & 0x000000F0) > 0;
+}
+
+bool EDGameVariablesClass::IsLifeSupportEnabled()
+{
+    return (LoadoutFlags2 & 0x00000F00) > 0;
+}
+
+bool EDGameVariablesClass::IsPowerDistributorEnabled()
+{
+    return (LoadoutFlags2 & 0x0000F000) > 0;
+}
+
+bool EDGameVariablesClass::IsSensorsEnabled()
+{
+    return (LoadoutFlags2 & 0x000F0000) > 0;
+}
+
+bool EDGameVariablesClass::IsShieldGeneratorEnabled()
+{
+    return (LoadoutFlags2 & 0x00F00000) > 0;
+}
+
 EDGameVariablesClass EDGameVariables;
