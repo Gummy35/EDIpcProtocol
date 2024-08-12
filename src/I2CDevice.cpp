@@ -3,7 +3,7 @@
 #include "CrcParameters.h"
 #include "CRC8.h"
 
-// #define DEBUG_COM
+#define DEBUG_COM
 
 #ifdef DEBUG_COM
 #define debug(MyCode) MyCode;

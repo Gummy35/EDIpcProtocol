@@ -13,6 +13,9 @@ EDGameVariablesClass::EDGameVariablesClass()
     memset(InfosCommanderName, 0, 21);
     memset(InfosShipName, 0, 21);
     memset(StatusLegal, 0, 21);
+    memset(AlertMessage1, 0, 21);
+    memset(AlertMessage2, 0, 21);
+    memset(AlertMessage3, 0, 21);
 }
 
 bool EDGameVariablesClass::IsDocked()
@@ -308,6 +311,20 @@ bool EDGameVariablesClass::IsSensorsEnabled()
 bool EDGameVariablesClass::IsShieldGeneratorEnabled()
 {
     return (LoadoutFlags2 & 0x00F00000) > 0;
+}
+
+/// @brief FSA (Full system analysis) = ACS (Analyse complete du systeme) = FSS (Full spectrum scanner)
+/// @return 
+bool EDGameVariablesClass::IsInFSAMode() 
+{
+    return (GuiFocus == (uint32_t)GUIFOCUS_MODE::GF_FSS);
+}
+
+/// @brief SAA (Surface area analysis) = DSD (Détecteur de surface détaillée)
+/// @return 
+bool EDGameVariablesClass::IsInDSDMode()
+{
+    return (GuiFocus == (uint32_t)GUIFOCUS_MODE::GF_SAA);
 }
 
 EDGameVariablesClass EDGameVariables;

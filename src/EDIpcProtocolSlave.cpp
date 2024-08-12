@@ -204,6 +204,17 @@ void EDIpcProtocolSlave::_writeTxBuffer(uint8_t data)
     responseBuffer[responseSize++] = data;
 }
 
+void EDIpcProtocolSlave::_writeTxBuffer(uint16_t data)
+{
+    _writeTxBuffer((uint8_t *)(&data), 2);
+}
+
+void EDIpcProtocolSlave::_writeTxBuffer(uint32_t data)
+{
+    _writeTxBuffer((uint8_t *)(&data), 4);
+}
+
+
 void EDIpcProtocolSlave::_writeTxBuffer(uint8_t * data, uint8_t dataSize)
 {
     if (responseSize + dataSize > I2C_MAX_MESSAGE_SIZE)
@@ -290,7 +301,7 @@ void EDIpcProtocolSlave::_handleRequest()
             _writeTxBuffer(EDGameVariables.LocationStationName);
         }
         _sendChunk(chunkId);
-        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
+        _updateFlag = (_updateFlag & (~ (uint32_t)(UPDATE_CATEGORY::UC_LOCATION)));
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_SYSTEM_POLICY) {
         if (chunkId == 0) {
             _resetTxBuffer();
@@ -299,7 +310,7 @@ void EDIpcProtocolSlave::_handleRequest()
             _writeTxBuffer(EDGameVariables.SystemSecurity);
         }
         _sendChunk(chunkId);
-        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
+        _updateFlag = (_updateFlag & (~ (uint32_t)(UPDATE_CATEGORY::UC_LOCATION)));
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_NAVROUTE) {
         if (chunkId == 0) {
             _resetTxBuffer();
@@ -310,7 +321,7 @@ void EDIpcProtocolSlave::_handleRequest()
             _writeTxBuffer(EDGameVariables.Navroute3);
         }
         _sendChunk(chunkId);
-        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_LOCATION)));
+        _updateFlag = (_updateFlag & (~ (uint32_t)(UPDATE_CATEGORY::UC_LOCATION)));
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_INFOS) {
         if (chunkId == 0) {
             _resetTxBuffer();
@@ -319,24 +330,36 @@ void EDIpcProtocolSlave::_handleRequest()
             _writeTxBuffer(EDGameVariables.InfosShipName);
         }
         _sendChunk(chunkId);
-        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_INFOS)));
+        _updateFlag = (_updateFlag & (~ (uint32_t)(UPDATE_CATEGORY::UC_INFOS)));
+    } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_URGENT_INFO) {
+        if (chunkId == 0) {
+            _resetTxBuffer();
+            _writeTxBuffer(EDGameVariables.AlertMessage1);
+            _writeTxBuffer("\t");
+            _writeTxBuffer(EDGameVariables.AlertMessage2);
+            _writeTxBuffer("\t");
+            _writeTxBuffer(EDGameVariables.AlertMessage3);
+        }
+        _sendChunk(chunkId);
+        _updateFlag = (_updateFlag & (~ (uint32_t)(UPDATE_CATEGORY::UC_URGENT_INFO)));
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_STATUS) {
         if (chunkId == 0) {
             _resetTxBuffer();
-            _writeTxBuffer((uint8_t *)(&EDGameVariables.StatusFlags1), 4);
-            _writeTxBuffer((uint8_t *)(&EDGameVariables.StatusFlags2), 4);
+            _writeTxBuffer(EDGameVariables.StatusFlags1);
+            _writeTxBuffer(EDGameVariables.StatusFlags2);
+            _writeTxBuffer(EDGameVariables.GuiFocus);
             _writeTxBuffer(EDGameVariables.StatusLegal);
         }
         _sendChunk(chunkId);
-        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_STATUS)));
+        _updateFlag = (_updateFlag & (~ (uint32_t)(UPDATE_CATEGORY::UC_STATUS)));
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_LOADOUT) {
         if (chunkId == 0) {
             _resetTxBuffer();
-            _writeTxBuffer((uint8_t *)(&EDGameVariables.LoadoutFlags1), 4);
-            _writeTxBuffer((uint8_t *)(&EDGameVariables.LoadoutFlags2), 4);
+            _writeTxBuffer(EDGameVariables.LoadoutFlags1);
+            _writeTxBuffer(EDGameVariables.LoadoutFlags2);
         }
         _sendChunk(chunkId);
-        _updateFlag = (_updateFlag & (~ (uint8_t)(UPDATE_CATEGORY::UC_STATUS)));
+        _updateFlag = (_updateFlag & (~ (uint32_t)(UPDATE_CATEGORY::UC_STATUS)));
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_MOCK) {
         if (chunkId == 0) {
             _resetTxBuffer();

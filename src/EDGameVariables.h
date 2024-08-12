@@ -1,6 +1,21 @@
 #pragma once
 #include <Arduino.h>
 
+enum class GUIFOCUS_MODE: uint32_t {
+    GF_NOFOCUS = 0,
+    GF_INTERNALPANEL = 1,
+    GF_EXTERNALPANEL = 2,
+    GF_COMMSPANEL = 3,
+    GF_ROLEPANEL = 4,
+    GF_STATIONSERVICES = 5,
+    GF_GALAXYMAP = 6,
+    GF_SYSTEMMAP = 7,
+    GF_ORRERY = 8,
+    GF_FSS = 9,
+    GF_SAA = 10,
+    GF_CODEX = 11
+};
+
 class EDGameVariablesClass
 {
 
@@ -66,7 +81,10 @@ public:
     bool IsLifeSupportEnabled();
     bool IsPowerDistributorEnabled();
     bool IsSensorsEnabled();
-    bool IsShieldGeneratorEnabled();    
+    bool IsShieldGeneratorEnabled();
+
+    bool IsInFSAMode();
+    bool IsInDSDMode();
 
     char LocationSystemName[21];
     char LocationStationName[21];
@@ -84,6 +102,7 @@ public:
 
     uint32_t StatusFlags1;
     uint32_t StatusFlags2;
+    uint32_t GuiFocus;
     uint32_t LoadoutFlags1 = 0xFFFFFFFF;
     uint32_t LoadoutFlags2 = 0xFFFFFFFF;
 };

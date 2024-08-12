@@ -21,7 +21,7 @@ public:
     void addUpdate(UPDATE_CATEGORY flag);
     void signalMaster();
     void reset();
-    uint8_t _updateFlag = 0;
+    uint32_t _updateFlag = 0;
 
 protected:
     TwoWire* _wire;
@@ -44,6 +44,8 @@ protected:
     void _writeTxBuffer(const char *data);
     void _writeTxBuffer(const __FlashStringHelper *ifsh);
     void _writeTxBuffer(uint8_t data);
+    void _writeTxBuffer(uint16_t data);
+    void _writeTxBuffer(uint32_t data);
     void _writeTxBuffer(uint8_t *data, uint8_t dataSize);
     void _sendChunk(uint8_t chunkId);
     void _processKeyEventQueue();
