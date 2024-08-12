@@ -96,10 +96,12 @@ public:
     char InfosCommanderName[21];
     char InfosShipName[21];
     char StatusLegal[21];
+    char AlertMessageTitle[21];
     char AlertMessage1[21];
     char AlertMessage2[21];
     char AlertMessage3[21];
 
+    uint32_t AlertDuration;
     uint32_t StatusFlags1;
     uint32_t StatusFlags2;
     uint32_t GuiFocus;

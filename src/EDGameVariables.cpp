@@ -13,6 +13,7 @@ EDGameVariablesClass::EDGameVariablesClass()
     memset(InfosCommanderName, 0, 21);
     memset(InfosShipName, 0, 21);
     memset(StatusLegal, 0, 21);
+    memset(AlertMessageTitle, 0, 21);
     memset(AlertMessage1, 0, 21);
     memset(AlertMessage2, 0, 21);
     memset(AlertMessage3, 0, 21);

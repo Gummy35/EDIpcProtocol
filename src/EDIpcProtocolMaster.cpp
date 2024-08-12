@@ -223,13 +223,15 @@ bool EDIpcProtocolMaster::_getGameInfosData()
 
 bool EDIpcProtocolMaster::_getUrgentInfosData()
 {
-    char receiveBuffer[80];
-    uint8_t pos = 0;
+    char receiveBuffer[100];
     WebSerial.println("fetching data");
     if (slaveDevice->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_URGENT_INFO, (uint8_t *)receiveBuffer, 80, false)) {
         WebSerial.println("got data");
         WebSerial.println(receiveBuffer);
-        pos += getDataFromBuffer(EDGameVariables.AlertMessage1, receiveBuffer, 20, '\t');
+        memcpy(&(EDGameVariables.AlertDuration), receiveBuffer, 4);
+        uint8_t pos = 4;
+        pos += getDataFromBuffer(EDGameVariables.AlertMessageTitle, receiveBuffer+pos, 20, '\t');
+        pos += getDataFromBuffer(EDGameVariables.AlertMessage1, receiveBuffer+pos, 20, '\t');
         pos += getDataFromBuffer(EDGameVariables.AlertMessage2, receiveBuffer+pos, 20, '\t');
         getDataFromBuffer(EDGameVariables.AlertMessage3, receiveBuffer+pos, 20, '\0');
     }
@@ -301,7 +303,7 @@ uint32_t EDIpcProtocolMaster::retrieveChanges(bool forceAll)
         {
             WebSerial.printf("New urgent info\n");
             result &= _getUrgentInfosData();
-            WebSerial.printf("New urgent info : %s, %s, %s\n", EDGameVariables.AlertMessage1, EDGameVariables.AlertMessage2, EDGameVariables.AlertMessage3);
+            WebSerial.printf("New urgent info : %s, %s, %s, %s\n", EDGameVariables.AlertMessageTitle, EDGameVariables.AlertMessage1, EDGameVariables.AlertMessage2, EDGameVariables.AlertMessage3);
         }
 
         return updateFlags;    

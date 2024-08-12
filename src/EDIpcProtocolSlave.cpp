@@ -334,6 +334,9 @@ void EDIpcProtocolSlave::_handleRequest()
     } else if (_currentRequestType == COM_REQUEST_TYPE::CRT_GET_URGENT_INFO) {
         if (chunkId == 0) {
             _resetTxBuffer();
+            _writeTxBuffer(EDGameVariables.AlertDuration);
+            _writeTxBuffer(EDGameVariables.AlertMessageTitle);
+            _writeTxBuffer("\t");
             _writeTxBuffer(EDGameVariables.AlertMessage1);
             _writeTxBuffer("\t");
             _writeTxBuffer(EDGameVariables.AlertMessage2);
