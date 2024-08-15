@@ -17,7 +17,7 @@ struct KeyEvent {
     uint8_t count;
 };
 
-enum class UPDATE_CATEGORY: uint8_t {
+enum class UPDATE_CATEGORY: uint32_t {
     UC_KEYPAD = 1,
     UC_GAME_FLAGS = 2,
     UC_STATUS = 4,
