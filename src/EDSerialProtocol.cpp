@@ -49,6 +49,8 @@ void EDSerialProtocol::Handle()
     // read the incoming byte:
     byte command = Serial.read();
 
+    // use if ... else instead of switch. Arduino is a pain in the ass with switch statements.
+
     if (command == SERIAL_COMMAND_SILENT)
     {
       _outputUI = false;
@@ -78,19 +80,7 @@ void EDSerialProtocol::Handle()
       ReadLine(EDGameVariables.LocationStationName, 20, '\t');
       ReadLine(EDGameVariables.LocalAllegiance, 20, '\t');
       ReadLine(EDGameVariables.SystemSecurity, 20, '\0');
-      Serial.print("l\tEDGameVariables.LocationSystemName:");
-      Serial.print(EDGameVariables.LocationSystemName);
-      Serial.print("\tEDGameVariables.LocationStationName:");
-      Serial.print(EDGameVariables.LocationStationName);
-      Serial.print("\tEDGameVariables.LocalAllegiance:");
-      Serial.print(EDGameVariables.LocalAllegiance);
-      Serial.print("\tEDGameVariables.SystemSecurity:");
-      Serial.println(EDGameVariables.SystemSecurity);
-      Serial.print("L\told update flags: ");
-      Serial.print(_ipcProtocolInstance->_updateFlag, 2);
       _ipcProtocolInstance->addUpdate(UPDATE_CATEGORY::UC_LOCATION);
-      Serial.print(" new flag : ");
-      Serial.println(_ipcProtocolInstance->_updateFlag, 2);
       _ipcProtocolInstance->signalMaster();
     }
     else if (command == SERIAL_COMMAND_GAMEINFOS)
@@ -98,30 +88,17 @@ void EDSerialProtocol::Handle()
       ReadSeparator();
       ReadLine(EDGameVariables.InfosCommanderName, 20, '\t');
       ReadLine(EDGameVariables.InfosShipName, 20, '\0');
-      Serial.print("g\t");
-      Serial.print(EDGameVariables.InfosCommanderName);
-      Serial.print("\t");
-      Serial.println(EDGameVariables.InfosShipName);
-      Serial.print("L\told update flags: ");
-      Serial.print(_ipcProtocolInstance->_updateFlag, 2);
       _ipcProtocolInstance->addUpdate(UPDATE_CATEGORY::UC_INFOS);
-      Serial.print(" new flag : ");
-      Serial.println(_ipcProtocolInstance->_updateFlag, 2);
-      _ipcProtocolInstance->signalMaster();
+      _ipcProtocolInstance->signalMaster();     
     }
     else if (command == SERIAL_COMMAND_GAMEFLAGS)
     {
       Serial.readBytes((uint8_t *)(&EDGameVariables.StatusFlags1), 4);
       Serial.readBytes((uint8_t *)(&EDGameVariables.StatusFlags2), 4);
-      Serial.readBytes((uint8_t *)(&EDGameVariables.GuiFocus), 4);
+      Serial.readBytes((uint8_t *)(&EDGameVariables.GuiFocus), 1);
+      Serial.readBytes((uint8_t *)(&EDGameVariables.FireGroup), 1);
       ReadLine(EDGameVariables.StatusLegal, 20, '\0');
-      Serial.print("f\t");
-      Serial.println(EDGameVariables.StatusLegal);
-      Serial.print("L\told update flags: ");
-      Serial.print(_ipcProtocolInstance->_updateFlag, 2);
       _ipcProtocolInstance->addUpdate(UPDATE_CATEGORY::UC_STATUS);
-      Serial.print(" new flag : ");
-      Serial.println(_ipcProtocolInstance->_updateFlag, 2);
       _ipcProtocolInstance->signalMaster();
     }
     else if (command == SERIAL_COMMAND_LOADOUT)
@@ -138,17 +115,7 @@ void EDSerialProtocol::Handle()
       ReadLine(EDGameVariables.Navroute1, 20, '\t');
       ReadLine(EDGameVariables.Navroute2, 20, '\t');
       ReadLine(EDGameVariables.Navroute3, 20, '\0');
-      Serial.print("n\t");
-      Serial.print(EDGameVariables.Navroute1);
-      Serial.print("\t");
-      Serial.print(EDGameVariables.Navroute2);
-      Serial.print("\t");
-      Serial.println(EDGameVariables.Navroute3);
-      Serial.print("L\told update flags: ");
-      Serial.print(_ipcProtocolInstance->_updateFlag, 2);
       _ipcProtocolInstance->addUpdate(UPDATE_CATEGORY::UC_LOCATION);
-      Serial.print(" new flag : ");
-      Serial.println(_ipcProtocolInstance->_updateFlag, 2);
       _ipcProtocolInstance->signalMaster();
     }
     else if (command == SERIAL_COMMAND_ALERTS)
@@ -158,15 +125,6 @@ void EDSerialProtocol::Handle()
       ReadLine(EDGameVariables.AlertMessage1, 20, '\t');
       ReadLine(EDGameVariables.AlertMessage2, 20, '\t');
       ReadLine(EDGameVariables.AlertMessage3, 20, '\0');
-      Serial.print("L\tnew alert message:");
-      Serial.print("\t");
-      Serial.print(EDGameVariables.AlertMessageTitle);
-      Serial.print("\t");
-      Serial.print(EDGameVariables.AlertMessage1);
-      Serial.print("\t");
-      Serial.print(EDGameVariables.AlertMessage2);
-      Serial.print("\t");
-      Serial.println(EDGameVariables.AlertMessage3);
       _ipcProtocolInstance->addUpdate(UPDATE_CATEGORY::UC_URGENT_INFO);
       _ipcProtocolInstance->signalMaster();
     }

@@ -82,7 +82,12 @@ void EDIpcProtocolSlave::updateDevices()
 
 void EDIpcProtocolSlave::addUpdate(UPDATE_CATEGORY flag)
 {
-    _updateFlag |= (uint8_t)flag;
+    _updateFlag |= (uint32_t)flag;
+}
+
+void EDIpcProtocolSlave::clearUpdate(UPDATE_CATEGORY flag)
+{
+    _updateFlag &= ~ (uint32_t)(flag);    
 }
 
 void EDIpcProtocolSlave::signalMaster()
@@ -123,6 +128,8 @@ void EDIpcProtocolSlave::_processKeyEventQueue()
                         // Serial.print((int)item->key);
                         // Serial.println();
                         Keyboard.release(item->key);
+                        if (item->count > 1)
+                            delay(50);
                     }
             }
             else
@@ -351,6 +358,7 @@ void EDIpcProtocolSlave::_handleRequest()
             _writeTxBuffer(EDGameVariables.StatusFlags1);
             _writeTxBuffer(EDGameVariables.StatusFlags2);
             _writeTxBuffer(EDGameVariables.GuiFocus);
+            _writeTxBuffer(EDGameVariables.FireGroup);
             _writeTxBuffer(EDGameVariables.StatusLegal);
         }
         _sendChunk(chunkId);

@@ -134,7 +134,8 @@ Data
 
 : Status flags 1, uint32_t (see EDGamesVariables.h, STATUS_FLAGS1)
   Status flags 2, uint32_t (see EDGamesVariables.h, STATUS_FLAGS2)
-  GUI Focus flag, uint32_t (see EDGamesVariables.h, GUIFOCUS_MODE)
+  GUI Focus flag, byte (see EDGamesVariables.h, GUIFOCUS_MODE)
+  Current fire group, byte
   Legal status, max 20 chars, `\0` terminated
 
 Returns

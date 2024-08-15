@@ -134,14 +134,17 @@ bool EDIpcProtocolMaster::_getGameStatus()
 {
     char receiveBuffer[50];    
     uint8_t pos = 0;   
-    if (slaveDevice->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_STATUS, (uint8_t *)receiveBuffer, 50, false)) {
+    if (slaveDevice->getData((uint8_t)COM_REQUEST_TYPE::CRT_GET_STATUS, (uint8_t *)receiveBuffer, 50, false)) {        
         memcpy(&(EDGameVariables.StatusFlags1), receiveBuffer, 4);
-        WebSerial.println(EDGameVariables.StatusFlags1);
-        memcpy(&(EDGameVariables.StatusFlags2), receiveBuffer+4, 4);
-        WebSerial.println(EDGameVariables.StatusFlags2);
-        memcpy(&(EDGameVariables.GuiFocus), receiveBuffer+8, 4);
-        WebSerial.printf("GuiFocus %d\n", EDGameVariables.GuiFocus);
-        getDataFromBuffer(EDGameVariables.StatusLegal, receiveBuffer + 12, 20, '\0');
+        pos += 4;
+//        WebSerial.println(EDGameVariables.StatusFlags1);
+        memcpy(&(EDGameVariables.StatusFlags2), receiveBuffer+pos, 4);
+        pos += 4;
+//        WebSerial.println(EDGameVariables.StatusFlags2);
+        EDGameVariables.GuiFocus = receiveBuffer[pos++];
+        EDGameVariables.FireGroup = receiveBuffer[pos++];
+//        WebSerial.printf("GuiFocus %d\n", EDGameVariables.GuiFocus);
+        getDataFromBuffer(EDGameVariables.StatusLegal, receiveBuffer + pos, 20, '\0');
         WebSerial.println(EDGameVariables.StatusLegal);
         WebSerial.println(receiveBuffer+8);
     }

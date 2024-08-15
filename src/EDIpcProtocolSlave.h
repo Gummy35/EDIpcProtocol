@@ -19,6 +19,7 @@ public:
     static void HandleReceivedData(int numBytes);
     void updateDevices();
     void addUpdate(UPDATE_CATEGORY flag);
+    void clearUpdate(UPDATE_CATEGORY flag);
     void signalMaster();
     void reset();
     uint32_t _updateFlag = 0;
