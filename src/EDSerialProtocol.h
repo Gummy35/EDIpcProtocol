@@ -16,6 +16,7 @@
 #define SERIAL_COMMAND_LOADOUT 'M'
 #define SERIAL_COMMAND_NAVROUTE 'N'
 #define SERIAL_COMMAND_ALERTS 'A'
+#define SERIAL_COMMAND_SHUTDOWN 'X'
 
 class EDSerialProtocol {
 

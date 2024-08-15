@@ -186,6 +186,7 @@ public:
     uint32_t LoadoutFlags1 = 0xFFFFFFFF;
     uint32_t LoadoutFlags2 = 0xFFFFFFFF;
 
+    bool IsShutdown = false;
 };
 
 extern EDGameVariablesClass EDGameVariables;

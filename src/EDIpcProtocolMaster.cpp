@@ -316,6 +316,13 @@ uint32_t EDIpcProtocolMaster::retrieveChanges(bool forceAll)
             WebSerial.printf("New urgent info : %s, %s, %s, %s\n", EDGameVariables.AlertMessageTitle, EDGameVariables.AlertMessage1, EDGameVariables.AlertMessage2, EDGameVariables.AlertMessage3);
         }
 
+        if (updateFlags & (uint32_t)UPDATE_CATEGORY::UC_SHUTDOWN)
+        {
+            EDGameVariables.IsShutdown = true;
+        } else {
+            EDGameVariables.IsShutdown = false;
+        }
+
         return updateFlags;    
     }
     return 0;

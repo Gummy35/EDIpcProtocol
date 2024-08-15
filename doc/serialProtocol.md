@@ -78,6 +78,20 @@ Returns
 
 : `V` followed by ident string
 
+### Standby
+
+Purpose
+
+: Put the control panel in Standby mode
+
+Header char
+
+: `X`
+
+Returns
+
+: N/A
+
 ### Location
 
 Purpose

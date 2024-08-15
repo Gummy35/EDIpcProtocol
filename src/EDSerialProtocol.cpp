@@ -63,6 +63,11 @@ void EDSerialProtocol::Handle()
       else
         Serial.println("H"); // Hello
     }
+    else if (command == SERIAL_COMMAND_SHUTDOWN)
+    {
+      _ipcProtocolInstance->addUpdate(UPDATE_CATEGORY::UC_SHUTDOWN);
+      _ipcProtocolInstance->signalMaster();
+    }
     else if (command == SERIAL_COMMAND_VERBOSE)
     {
       Serial.println("V"); //verbose
@@ -89,6 +94,7 @@ void EDSerialProtocol::Handle()
       ReadLine(EDGameVariables.InfosCommanderName, 20, '\t');
       ReadLine(EDGameVariables.InfosShipName, 20, '\0');
       _ipcProtocolInstance->addUpdate(UPDATE_CATEGORY::UC_INFOS);
+      _ipcProtocolInstance->clearUpdate(UPDATE_CATEGORY::UC_SHUTDOWN);
       _ipcProtocolInstance->signalMaster();     
     }
     else if (command == SERIAL_COMMAND_GAMEFLAGS)
@@ -98,6 +104,8 @@ void EDSerialProtocol::Handle()
       Serial.readBytes((uint8_t *)(&EDGameVariables.GuiFocus), 1);
       Serial.readBytes((uint8_t *)(&EDGameVariables.FireGroup), 1);
       ReadLine(EDGameVariables.StatusLegal, 20, '\0');
+      if ((EDGameVariables.StatusFlags1 > 0) || (EDGameVariables.StatusFlags2 > 0))
+        _ipcProtocolInstance->clearUpdate(UPDATE_CATEGORY::UC_SHUTDOWN);
       _ipcProtocolInstance->addUpdate(UPDATE_CATEGORY::UC_STATUS);
       _ipcProtocolInstance->signalMaster();
     }
