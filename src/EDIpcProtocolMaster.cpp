@@ -117,11 +117,18 @@ bool EDIpcProtocolMaster::_sendKeyData(KeyEvent* keyEvent)
 uint8_t getDataFromBuffer(char* dst, char* src, uint8_t maxl, char separator)
 {
     uint8_t pos = 0;
+    uint8_t trimPos = 0;
     while ((pos < maxl) && (src[pos] != separator)) {
         dst[pos] = src[pos];
         pos++;
     }
     dst[pos] = 0;
+    trimPos = pos;
+
+    // trim right
+    while ((trimPos-- > 0) && (dst[trimPos] == ' '))
+        dst[trimPos] = 0;
+
     while (src[pos] != separator)
         pos++;
 
